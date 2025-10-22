@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bell, User, ChevronDown, Menu } from "lucide-react";
 
-function Topbar({ onMenuClick }) {
+function Topbar({ onMenuClick, pageTitle  }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const notifications = [
@@ -10,6 +10,7 @@ function Topbar({ onMenuClick }) {
   ];
 
   return (
+    
     <div className="h-16 bg-white shadow-md flex items-center justify-between px-4 sm:px-6 top-0 left-0 z-30 relative">
       {/* Left Section */}
       <div className="flex items-center gap-3">
@@ -23,7 +24,7 @@ function Topbar({ onMenuClick }) {
 
         {/* DASHBOARD title (desktop only) */}
         <h1 className="hidden lg:block text-2xl font-bold text-[#4D1C0A] leading-tight">
-          DASHBOARD
+          {pageTitle}
         </h1>
       </div>
 

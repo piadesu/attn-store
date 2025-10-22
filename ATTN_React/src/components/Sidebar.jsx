@@ -20,10 +20,11 @@ function Navbar({ isOpen, onClose }) {
     // Redirect to login page
     navigate("/");
   };
-  const handleItemClick = (name) => {
+  const handleItemClick = (name,path) => {
     setActive(name);
     setOpenDropdown(null);
     onClose(); // ✅ Close sidebar after clicking (mobile)
+    if (path) navigate(path);
   };
 
   const toggleDropdown = (name) => {
@@ -63,7 +64,7 @@ function Navbar({ isOpen, onClose }) {
             {/* 🟧 Dashboard */}
             <li>
               <button
-                onClick={() => handleItemClick("Dashboard")}
+                onClick={() => handleItemClick("Dashboard", "/dashboard")}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 text-left ${
                   active === "Dashboard"
                     ? "bg-[#F8961E] text-white shadow-md scale-[1.02]"
@@ -124,7 +125,7 @@ function Navbar({ isOpen, onClose }) {
                 <ul className="ml-10 mt-2 space-y-2 text-gray-700">
                   <li>
                     <button
-                      onClick={() => handleItemClick("Order Product")}
+                      onClick={() => handleItemClick("Order Product","/transaction_order_product")}
                       className="hover:text-[#F8961E]"
                     >
                       Order Product
@@ -132,7 +133,7 @@ function Navbar({ isOpen, onClose }) {
                   </li>
                   <li>
                     <button
-                      onClick={() => handleItemClick("Transaction List")}
+                      onClick={() => handleItemClick("Transaction List", "/transaction-list")}
                       className="hover:text-[#F8961E]"
                     >
                       Transaction List
@@ -141,7 +142,7 @@ function Navbar({ isOpen, onClose }) {
                   <li>
                     <button
                       onClick={() =>
-                        handleItemClick("E-Wallet Transaction")
+                        handleItemClick("E-Wallet Transaction","/transaction_ewallet")
                       }
                       className="hover:text-[#F8961E]"
                     >
@@ -190,30 +191,21 @@ function Navbar({ isOpen, onClose }) {
                 <ul className="ml-10 mt-2 space-y-2 text-gray-700">
                   <li>
                     <button
-                      onClick={() => handleItemClick("Order Product")}
+                      onClick={() => handleItemClick("Order Product","/inventory_add_product")}
                       className="hover:text-[#F8961E]"
                     >
-                      Order Product
+                      Add Product
                     </button>
                   </li>
                   <li>
                     <button
-                      onClick={() => handleItemClick("Transaction List")}
+                      onClick={() => handleItemClick("Transaction List", "/inventory_product_list")}
                       className="hover:text-[#F8961E]"
                     >
-                      Transaction List
+                      Product List
                     </button>
                   </li>
-                  <li>
-                    <button
-                      onClick={() =>
-                        handleItemClick("E-Wallet Transaction")
-                      }
-                      className="hover:text-[#F8961E]"
-                    >
-                      E-Wallet Transaction
-                    </button>
-                  </li>
+                  
                 </ul>
               )}
             </li>
