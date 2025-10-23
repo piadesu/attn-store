@@ -55,6 +55,8 @@ useEffect(() => {
                   </div>
                 </main>
               </div>
+
+              
             </PrivateRoute>
           }
         />
