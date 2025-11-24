@@ -1,6 +1,12 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from ATTN_Backend.models import Product
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+
+from .models import Product
+from .serializers import ProductSerializer
 
 
 def website_description(request):
@@ -12,3 +18,19 @@ def website_description(request):
 
     # Return JSON response
     return JsonResponse({"recipes": recipes_list})
+
+@api_view(['POST'])
+def add_product(request):
+    serializer = ProductSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    print(serializer.errors)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def product_list(request):
+    products = Product.objects.all()
+    serializer = ProductSerializer(products, many=True)
+    return Response(serializer.data)
