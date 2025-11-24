@@ -44,7 +44,7 @@ function Navbar({ isOpen, onClose }) {
           <img
             src={logo}
             alt="ATTN Logo"
-            className="w-14 h-14 object-contain"
+            className="w-14 h-14 rounded-xl"
           />
           <div>
             <h1 className="text-2xl font-bold text-[#F8961E] leading-tight">
@@ -191,7 +191,7 @@ function Navbar({ isOpen, onClose }) {
                 <ul className="ml-10 mt-2 space-y-2 text-gray-700">
                   <li>
                     <button
-                      onClick={() => handleItemClick("Order Product","/inventory_add_product")}
+                      onClick={() => handleItemClick("Add Product","/inventory_add_product")}
                       className="hover:text-[#F8961E]"
                     >
                       Add Product
@@ -199,7 +199,7 @@ function Navbar({ isOpen, onClose }) {
                   </li>
                   <li>
                     <button
-                      onClick={() => handleItemClick("Transaction List", "/inventory_product_list")}
+                      onClick={() => handleItemClick("Product List", "/inventory_product_list")}
                       className="hover:text-[#F8961E]"
                     >
                       Product List
