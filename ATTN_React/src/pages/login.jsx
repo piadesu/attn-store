@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Logo from "../assets/images/Your paragraph text.png";
-import {Eye, EyeOff} from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -12,32 +12,44 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Redirect if already logged in
+  // Redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem("access");
     if (token) {
-      navigate("/dashboard"); // already logged in, go to dashboard
+      navigate("/dashboard");
     }
   }, [navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      const response = await axios.post("http://127.0.0.1:8000/api/token/", {
-        username,
-        password,
-      });
-      localStorage.setItem("access", response.data.access);
-      localStorage.setItem("refresh", response.data.refresh);
-      navigate("/dashboard");
-    } catch {
-      setError("Invalid username or password");
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
+
+  console.log("Submitting login:", { USERNAME: username, PASSWORD: password });
+
+  try {
+    const response = await axios.post("http://127.0.0.1:8000/api/login/", {
+      USERNAME: username,
+      PASSWORD: password,
+    });
+
+    console.log("Login response:", response.data);
+
+    // Store user info in localStorage for future redirect or auth check
+    localStorage.setItem("access", JSON.stringify(response.data));
+
+    // Login successful, navigate to dashboard
+    navigate("/dashboard");
+  } catch (err) {
+    console.error("Login error:", err.response);
+    setError(err.response?.data?.detail || "Invalid username or password");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
@@ -83,17 +95,21 @@ export default function LoginPage() {
                 Password <span className="text-red-500">*</span>
               </label>
               <input
-                type= {showPassword ? "text" : "password"}
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter Password"
                 required
                 className="w-full mt-1 px-4 py-2 border border-[#d5b89c] rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#F8961E]/30 focus:border-[#F8961E] transition-all"
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)}
-                className="absolute mt-4 right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
-                  {showPassword ?  <Eye size={23} />: <EyeOff size={23} /> }
-                </button>
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute mt-4 right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              >
+                {showPassword ? <Eye size={23} /> : <EyeOff size={23} />}
+              </button>
             </div>
 
             <button
@@ -111,12 +127,12 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-gray-600 mt-6">
             Don’t have an account?{" "}
-            <a
-              href="/register"
+            <button
+              onClick={() => navigate("/signup")}
               className="text-[#F8961E] font-medium hover:underline"
             >
               Sign up
-            </a>
+            </button>
           </p>
         </div>
       </div>

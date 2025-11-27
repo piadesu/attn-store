@@ -9,8 +9,10 @@ import Dashboard from "./pages/dashboard";
 import OrderProduct from "./pages/transaction_order_product";
 import AddProduct from "./pages/inventory_add_product";
 import Ewallet from "./pages/transaction_ewallet";
+import EwalletHistory from "./pages/transaction_ewallet_history";
 import ProductList from "./pages/inventory_product_list";
 import EditProduct from "./pages/inventory_edit_product";
+import Signup from "./pages/signup";
 import "./App.css";
 
 
@@ -64,6 +66,8 @@ useEffect(() => {
       <Routes>
         {/* Public route */}
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} /> 
 
         {/* Protected route with Sidebar and. Topbar */}
 <Route
@@ -134,6 +138,16 @@ useEffect(() => {
     <PrivateRoute>
       <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
         <EditProduct />
+      </Layout>
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/transaction_ewallet_history"
+  element={
+    <PrivateRoute>
+      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+        <EwalletHistory />
       </Layout>
     </PrivateRoute>
   }
