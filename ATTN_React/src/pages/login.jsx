@@ -42,7 +42,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
       {/* LEFT SIDE */}
-      <div className="w-full md:w-[40%]  flex flex-row md:flex-col items-center justify-center py-1 md:h-screen gap-4 bg-gradient-to-bl from-[#4D1C0A] via-[#F8961E] to-[#4D1C0A]">
+      <div className="w-full md:w-[40%]  flex flex-row md:flex-col items-center justify-center py-1 md:h-screen gap-4 bg-gradient-to-bl from-[#C53B09] via-[#F8961E] to-[#C53B09]">
         <img
           src={Logo}
           alt="ATTN Logo"
@@ -66,7 +66,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
               <label className="text-sm font-medium text-gray-700">
-                Username
+                Username <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -80,7 +80,7 @@ export default function LoginPage() {
 
             <div className="relative">
               <label className="text-sm font-medium text-gray-700">
-                Password
+                Password <span className="text-red-500">*</span>
               </label>
               <input
                 type= {showPassword ? "text" : "password"}

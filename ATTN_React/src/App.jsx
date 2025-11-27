@@ -10,6 +10,7 @@ import OrderProduct from "./pages/transaction_order_product";
 import AddProduct from "./pages/inventory_add_product";
 import Ewallet from "./pages/transaction_ewallet";
 import ProductList from "./pages/inventory_product_list";
+import EditProduct from "./pages/inventory_edit_product";
 import "./App.css";
 
 
@@ -122,6 +123,17 @@ useEffect(() => {
     <PrivateRoute>
       <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
         <ProductList />
+      </Layout>
+    </PrivateRoute>
+  }
+/>
+
+<Route
+  path="/inventory_edit_product/:id"
+  element={
+    <PrivateRoute>
+      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+        <EditProduct />
       </Layout>
     </PrivateRoute>
   }
