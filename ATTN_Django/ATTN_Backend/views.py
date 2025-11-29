@@ -81,45 +81,53 @@ def order_list(request):
     serializer = OrderProductsSerializer(orders, many=True)
     return Response(serializer.data)
 
-
-@api_view(['POST'])
+@api_view(["POST"])
 def create_order(request):
-    """
-    Creates an order AND its ordered items.
-    No TransactionList is used anymore.
-    """
+    order_data = request.data
 
-    order_data = {
-        "status": request.data.get("status"),
-        "cus_name": request.data.get("cus_name"),
-        "contact_num": request.data.get("contact_num"),
-        "total_amt": request.data.get("total_amt"),
-        "due_date": request.data.get("due_date"),
-    }
+    # 1. CREATE ORDER RECORD
+    order = OrderProducts.objects.create(
+        status=order_data["status"],
+        cus_name=order_data.get("cus_name"),
+        contact_num=order_data.get("contact_num"),
+        due_date=order_data.get("due_date"),
+        total_amt=order_data["total_amt"],
+    )
 
-    order_serializer = OrderProductsSerializer(data=order_data)
+    # 2. LOOP THROUGH ITEMS & DEDUCT STOCK
+    for item in order_data["items"]:
+        product_name = item["product_name"]
 
-    if order_serializer.is_valid():
-        order = order_serializer.save()
+        try:
+            # Find product by name (case-insensitive)
+            product = Product.objects.get(name__iexact=product_name)
+        except Product.DoesNotExist:
+            return Response({"error": f"Product '{product_name}' not found"}, status=400)
 
-        # Create ordered items manually
-        items = request.data.get("items", [])
-        for item in items:
-            OrderedItem.objects.create(
-                order=order,
-                product_name=item.get("product_name"),
-                qty=item.get("qty"),
-                price=item.get("price"),
-                subtotal=item.get("subtotal"),
-                cost_price=item.get("cost_price"),
-                selling_price=item.get("selling_price"),
+        qty_ordered = item["qty"]
+
+        # Check if enough stock
+        if product.stock < qty_ordered:
+            return Response(
+                {"error": f"Not enough stock for {product.name}. Only {product.stock} left."},
+                status=400,
             )
 
-        return Response(OrderProductsSerializer(order).data, status=201)
+        # Deduct stock
+        product.stock -= qty_ordered
+        product.save()
 
-    print(order_serializer.errors)
-    return Response(order_serializer.errors, status=400)
+        # Save OrderedItem record
+        OrderedItem.objects.create(
+            order=order,
+            product_name=item["product_name"],
+            qty=item["qty"],
+            selling_price=item["selling_price"],
+            cost_price=item["cost_price"],  
+            subtotal=item["subtotal"],
+        )
 
+    return Response(OrderProductsSerializer(order).data)
 
 # --------------------------
 # EWALLET VIEWS

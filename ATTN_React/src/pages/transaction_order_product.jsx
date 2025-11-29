@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 
+// -----------------------------
+// Title Case Helper
+// -----------------------------
+const toTitleCase = (str) =>
+  str && typeof str === "string"
+    ? str.replace(/\w\S*/g, (t) => t[0].toUpperCase() + t.substr(1).toLowerCase())
+    : "";
+
 function OrderProduct() {
   const [products, setProducts] = useState([]);
   const [orderItems, setOrderItems] = useState([]);
@@ -12,22 +20,28 @@ function OrderProduct() {
   const [showModal, setShowModal] = useState(false);
 
   // -----------------------------
-  // TEMPORARY DUMMY PRODUCTS (30 items)
+  // FETCH PRODUCTS FROM DJANGO API
   // -----------------------------
   useEffect(() => {
-    const dummyProducts = Array.from({ length: 30 }, (_, i) => ({
-      id: i + 1,
-      name: `Product ${i + 1}`,
-      category: `Category ${(i % 5) + 1}`,
-      selling_price: `₱${(100 + i * 5).toFixed(2)}`,
-      checked: false,
-    }));
-
-    setProducts(dummyProducts);
+    fetch("http://localhost:8000/api/products/")
+      .then((res) => res.json())
+      .then((data) => {
+        const formatted = data.map((p) => ({
+          id: p.id,
+          name: toTitleCase(p.name),
+          category: p.category?.name ? toTitleCase(p.category.name) : "Uncategorized",
+          selling_price: Number(p.selling_price),
+          cost_price: Number(p.cost_price), // include cost price
+          stock: p.stock,                   // include stock
+          checked: false,
+        }));
+        setProducts(formatted);
+      })
+      .catch((err) => console.error("Loading products failed:", err));
   }, []);
 
   // -----------------------------
-  // ADD ITEMS TO ORDER
+  // CHECKBOX HANDLER
   // -----------------------------
   const handleCheckboxChange = (index) => {
     const updated = [...products];
@@ -35,6 +49,9 @@ function OrderProduct() {
     setProducts(updated);
   };
 
+  // -----------------------------
+  // ADD SELECTED ITEMS TO ORDER
+  // -----------------------------
   const handleAddSelectedToOrder = () => {
     const selected = products.filter((p) => p.checked);
 
@@ -43,8 +60,15 @@ function OrderProduct() {
       return;
     }
 
+    // Check for out-of-stock
+    const outOfStock = selected.filter((p) => p.stock === 0);
+    if (outOfStock.length > 0) {
+      alert("Some selected products are OUT OF STOCK.");
+      return;
+    }
+
     const newItems = selected
-      .filter((p) => !orderItems.some((item) => item.name === p.name))
+      .filter((p) => !orderItems.some((item) => item.id === p.id))
       .map((p) => ({ ...p, qty: 1 }));
 
     setOrderItems([...orderItems, ...newItems]);
@@ -53,17 +77,28 @@ function OrderProduct() {
   };
 
   // -----------------------------
-  // UPDATE QTY
+  // UPDATE QUANTITY (Check stock)
   // -----------------------------
   const updateQty = (index, type) => {
     const updated = [...orderItems];
-    if (type === "inc") updated[index].qty += 1;
-    if (type === "dec" && updated[index].qty > 1) updated[index].qty -= 1;
+
+    if (type === "inc") {
+      if (updated[index].qty + 1 > updated[index].stock) {
+        alert("Not enough stock.");
+        return;
+      }
+      updated[index].qty += 1;
+    }
+
+    if (type === "dec" && updated[index].qty > 1) {
+      updated[index].qty -= 1;
+    }
+
     setOrderItems(updated);
   };
 
   // -----------------------------
-  // FORMAT DATE FOR BACKEND
+  // FORMAT DATE
   // -----------------------------
   const formatDate = (date) => {
     if (!date) return null;
@@ -71,45 +106,59 @@ function OrderProduct() {
   };
 
   // -----------------------------
-  // SUBMIT ORDER (PAID or PENDING)
+  // SUBMIT ORDER TO BACKEND
   // -----------------------------
   const submitOrder = (statusType) => {
+    // Validate stock before submit
+    for (let item of orderItems) {
+      if (item.qty > item.stock) {
+        alert(`Not enough stock for ${item.name}`);
+        return;
+      }
+    }
+
     const orderPayload = {
       status: statusType,
       cus_name: customerData.name || null,
       contact_num: customerData.phone || null,
       due_date: formatDate(customerData.dueDate),
-      total_amt: orderItems.reduce((sum, item) => {
-        const price = Number(item.selling_price.replace("₱", ""));
-        return sum + price * item.qty;
-      }, 0),
+      total_amt: orderItems.reduce(
+        (sum, item) => sum + item.selling_price * item.qty,
+        0
+      ),
       items: orderItems.map((item) => ({
+        product_id: item.id,
         product_name: item.name,
         qty: item.qty,
-        price: Number(item.selling_price.replace("₱", "")),
-        subtotal: Number(item.selling_price.replace("₱", "")) * item.qty,
+        cost_price: item.cost_price, // send cost price
+        selling_price: item.selling_price,
+        subtotal: item.selling_price * item.qty,
       })),
     };
 
-    console.log("Submitting:", orderPayload);
-
-    alert(`Order marked as ${statusType}!`);
-
-    // Reset UI
-    setOrderItems([]);
-    setCustomerData({ name: "", phone: "", dueDate: "" });
-    setShowModal(false);
+    fetch("http://localhost:8000/api/create-order/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderPayload),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        alert(`Order marked as ${statusType}!`);
+        setOrderItems([]);
+        setCustomerData({ name: "", phone: "", dueDate: "" });
+        setShowModal(false);
+      })
+      .catch(() => alert("Failed to save order."));
   };
 
   return (
     <div className="p-6 space-y-8">
-
+      
       {/* PRODUCT LIST */}
       <div className="bg-white p-6 rounded-xl border border-[#D9D9D9] shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-[#4D1C0A]">Product List</h1>
 
-          {/* Search */}
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 px-3 py-1.5 rounded-md">
             <Search className="w-4 h-4 text-gray-400" />
             <input
@@ -120,7 +169,7 @@ function OrderProduct() {
           </div>
         </div>
 
-              {/* Scrollable product table */}
+        {/* Scrollable Table */}
         <div className="max-h-[300px] overflow-y-auto border rounded-lg">
           <table className="w-full text-sm text-[#4D1C0A]">
             <thead className="bg-gray-50 border-b sticky top-0 z-10">
@@ -128,25 +177,49 @@ function OrderProduct() {
                 <th className="py-2 px-3 text-center">Select</th>
                 <th className="py-2 px-3 text-center">Product</th>
                 <th className="py-2 px-3 text-center">Category</th>
-                <th className="py-2 px-3 text-center">Selling Price</th>
+                <th className="py-2 px-3 text-center">Price</th>
               </tr>
             </thead>
 
             <tbody>
-              {products.map((p, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={p.checked}
-                      onChange={() => handleCheckboxChange(index)}
-                    />
+              {products.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="py-4 text-center text-gray-500 italic">
+                    No products available
                   </td>
-                  <td className="py-2 px-3 text-center">{p.name}</td>
-                  <td className="py-2 px-3 text-center">{p.category}</td>
-                  <td className="py-2 px-3 text-center">{p.selling_price}</td>
                 </tr>
-              ))}
+              ) : (
+                products.map((p, index) => (
+                  <tr
+                    key={p.id}
+                    className={`border-b ${
+                      p.stock === 0 ? "bg-red-50 text-gray-400" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <td className="py-2 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        disabled={p.stock === 0}
+                        checked={p.checked}
+                        onChange={() => handleCheckboxChange(index)}
+                      />
+                    </td>
+
+                    <td className="py-2 px-3 text-center">
+                      {p.name}
+                      {p.stock === 0 && (
+                        <span className="text-red-500 font-semibold ml-2">
+                          (Out of Stock)
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-2 px-3 text-center">{p.category}</td>
+
+                    <td className="py-2 px-3 text-center">₱{p.selling_price}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -163,14 +236,11 @@ function OrderProduct() {
 
       {/* ORDER DETAILS */}
       <div className="bg-white p-6 rounded-xl border border-[#A29E9E] shadow-sm">
-        <h1 className="text-xl font-bold text-[#4D1C0A] mb-4">
-          Order Details
-        </h1>
+        <h1 className="text-xl font-bold text-[#4D1C0A] mb-4">Order Details</h1>
 
         <div className="border rounded-lg">
           {orderItems.map((p, index) => {
-            const price = Number(p.selling_price.replace("₱", ""));
-            const subtotal = price * p.qty;
+            const subtotal = p.selling_price * p.qty;
 
             return (
               <div
@@ -190,9 +260,13 @@ function OrderProduct() {
                 </div>
 
                 <div className="flex justify-center">
-                  <button className="border px-2" onClick={() => updateQty(index, "dec")}>-</button>
+                  <button className="border px-2" onClick={() => updateQty(index, "dec")}>
+                    -
+                  </button>
                   <span className="mx-2">{p.qty}</span>
-                  <button className="border px-2" onClick={() => updateQty(index, "inc")}>+</button>
+                  <button className="border px-2" onClick={() => updateQty(index, "inc")}>
+                    +
+                  </button>
                 </div>
 
                 <div className="text-right font-medium">₱{subtotal}</div>
@@ -203,10 +277,7 @@ function OrderProduct() {
 
         <div className="text-right mt-3 font-bold text-lg text-[#4D1C0A]">
           Total: ₱
-          {orderItems.reduce((sum, p) => {
-            const price = Number(p.selling_price.replace("₱", ""));
-            return sum + price * p.qty;
-          }, 0)}
+          {orderItems.reduce((sum, p) => sum + p.selling_price * p.qty, 0)}
         </div>
 
         <div className="flex gap-3 justify-end mt-4">
@@ -226,7 +297,7 @@ function OrderProduct() {
         </div>
       </div>
 
-      {/* PENDING MODAL */}
+      {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
           <div className="bg-white w-[600px] rounded-xl p-8 relative shadow-xl">
@@ -243,10 +314,12 @@ function OrderProduct() {
 
             <div className="space-y-5">
               <div>
-                <label className="block font-semibold">Customer Name</label>
+                <label className="block font-semibold text-gray-800">
+                  Customer Name
+                </label>
                 <input
                   type="text"
-                  className="w-full border rounded-lg px-4 py-2"
+                  className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.name}
                   onChange={(e) =>
                     setCustomerData({ ...customerData, name: e.target.value })
@@ -255,10 +328,10 @@ function OrderProduct() {
               </div>
 
               <div>
-                <label className="block font-semibold">Phone Number</label>
+                <label className="block font-semibold text-gray-800">Phone Number</label>
                 <input
                   type="text"
-                  className="w-full border rounded-lg px-4 py-2"
+                  className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.phone}
                   onChange={(e) =>
                     setCustomerData({ ...customerData, phone: e.target.value })
@@ -267,10 +340,10 @@ function OrderProduct() {
               </div>
 
               <div>
-                <label className="block font-semibold">Due Date</label>
+                <label className="block font-semibold text-gray-800">Due Date</label>
                 <input
                   type="date"
-                  className="w-full border rounded-lg px-4 py-2"
+                  className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.dueDate}
                   onChange={(e) =>
                     setCustomerData({
@@ -293,7 +366,6 @@ function OrderProduct() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

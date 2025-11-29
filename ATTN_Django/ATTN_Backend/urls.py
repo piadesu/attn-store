@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views   # CORRECT IMPORT
 
 urlpatterns = [
     path('add-product/', views.add_product),
@@ -18,5 +18,4 @@ urlpatterns = [
     path('orders/', views.order_list),
     path('create-order/', views.create_order),
     path('orders/<int:pk>/', views.update_order_status),
-
 ]
