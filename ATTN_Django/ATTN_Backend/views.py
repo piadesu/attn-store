@@ -4,57 +4,46 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import generics
+from rest_framework import status, generics
 
-from rest_framework.views import APIView
+from django.contrib.auth.hashers import make_password, check_password
 
-from django.contrib.auth.hashers import make_password
-from django.contrib.auth.hashers import check_password
+from .models import (
+    Product, Category,
+    OrderProducts, OrderedItem,
+    Ewallet, Account
+)
 
+from .serializers import (
+    ProductSerializer, CategorySerializer,
+    EwalletSerializer, AccountSerializer,
+    OrderProductsSerializer, OrderedItemSerializer
+)
 
-from .models import Product
-from .models import Category
-from .serializers import ProductSerializer
-from .serializers import CategorySerializer
+# --------------------------
+# CATEGORY VIEW
+# --------------------------
 
-from .models import TransactionList
-from .serializers import TransactionSerializer
-
-from .models import Ewallet
-from .serializers import EwalletSerializer
-
-from .models import Account
-from .serializers import AccountSerializer
-
-from django.http import JsonResponse
-from .models import Product
-
-def website_description(request):
-    # Fetch all recipes from the database
-    recipes = Product.objects.all().values()  # .values() returns dictionaries of each record
-
-    # Convert queryset to a list so JsonResponse can serialize it
-    recipes_list = list(recipes)
-
-    # Return JSON response
-    return JsonResponse({"recipes": recipes_list})
-
-class CategoryListCreateview(generics.ListCreateAPIView):
+class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+
+
+# --------------------------
+# PRODUCT VIEWS
+# --------------------------
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def add_product(request):
-    
     serializer = ProductSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     print(serializer.errors)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 def product_list(request):
@@ -62,33 +51,79 @@ def product_list(request):
     serializer = ProductSerializer(products, many=True)
     return Response(serializer.data)
 
+
 @api_view(['GET', 'PATCH'])
 def product_detail(request, pk):
     try:
         product = Product.objects.get(pk=pk)
     except Product.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    
+
     if request.method == "GET":
         serializer = ProductSerializer(product)
         return Response(serializer.data)
-    
+
     if request.method == "PATCH":
         serializer = ProductSerializer(product, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
 
+# --------------------------
+# ORDER VIEWS
+# --------------------------
 
 @api_view(['GET'])
-def transaction_list(request):
-    transactions = TransactionList.objects.all()
-    serializer = TransactionSerializer(transactions, many=True)
+def order_list(request):
+    orders = OrderProducts.objects.all()
+    serializer = OrderProductsSerializer(orders, many=True)
     return Response(serializer.data)
 
+
+@api_view(['POST'])
+def create_order(request):
+    """
+    Creates an order AND its ordered items.
+    No TransactionList is used anymore.
+    """
+
+    order_data = {
+        "status": request.data.get("status"),
+        "cus_name": request.data.get("cus_name"),
+        "contact_num": request.data.get("contact_num"),
+        "total_amt": request.data.get("total_amt"),
+        "due_date": request.data.get("due_date"),
+    }
+
+    order_serializer = OrderProductsSerializer(data=order_data)
+
+    if order_serializer.is_valid():
+        order = order_serializer.save()
+
+        # Create ordered items manually
+        items = request.data.get("items", [])
+        for item in items:
+            OrderedItem.objects.create(
+                order=order,
+                product_name=item.get("product_name"),
+                qty=item.get("qty"),
+                price=item.get("price"),
+                subtotal=item.get("subtotal"),
+                cost_price=item.get("cost_price"),
+                selling_price=item.get("selling_price"),
+            )
+
+        return Response(OrderProductsSerializer(order).data, status=201)
+
+    print(order_serializer.errors)
+    return Response(order_serializer.errors, status=400)
+
+
+# --------------------------
+# EWALLET VIEWS
+# --------------------------
 
 @api_view(['POST'])
 def add_ewallet(request):
@@ -96,7 +131,7 @@ def add_ewallet(request):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     print(serializer.errors)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -107,33 +142,35 @@ def ewallet_list(request):
     serializer = EwalletSerializer(ewallets, many=True)
     return Response(serializer.data)
 
+
+# --------------------------
+# ACCOUNT AUTH
+# --------------------------
+
 @api_view(["POST"])
 def signup(request):
-    first_name = request.data.get("FIRST_NAME")  # <-- match the frontend
+    first_name = request.data.get("FIRST_NAME")
+    middle_name = request.data.get("MIDDLE_NAME")
     last_name = request.data.get("LAST_NAME")
     username = request.data.get("USERNAME")
     password = request.data.get("PASSWORD")
-    middle_name = request.data.get("MIDDLE_NAME")
     date_of_birth = request.data.get("DATE_OF_BIRTH")
 
-    # Check if username already exists (using the correct field name)
     if Account.objects.filter(USERNAME=username).exists():
         return Response({"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Create account using the correct field names
     account = Account(
         USERNAME=username,
         FIRST_NAME=first_name,
         MIDDLE_NAME=middle_name,
         LAST_NAME=last_name,
-        DATE_OF_BIRTH=date_of_birth
+        DATE_OF_BIRTH=date_of_birth,
     )
-    # Hash password using your model's method
-    account.set_password(password)  
+    account.set_password(password)
     account.save()
 
-    return Response({"message": "Account created successfully"}, status=status.HTTP_201_CREATED)
-    
+    return Response({"message": "Account created successfully"}, status=201)
+
 
 @api_view(["POST"])
 def login_account(request):
@@ -141,12 +178,12 @@ def login_account(request):
     password = request.data.get("PASSWORD")
 
     try:
-        account = Account.objects.get(USERNAME=username)  # match your model field
+        account = Account.objects.get(USERNAME=username)
     except Account.DoesNotExist:
-        return Response({"error": "Invalid username or password"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Invalid username or password"}, status=400)
 
     if not account.check_password(password):
-        return Response({"error": "Invalid username or password"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Invalid username or password"}, status=400)
 
     return Response({
         "message": "Login successful",
@@ -154,3 +191,29 @@ def login_account(request):
         "first_name": account.FIRST_NAME,
         "last_name": account.LAST_NAME
     })
+@api_view(['GET'])
+def website_description(request):
+    products = Product.objects.all().values()
+    return Response({"recipes": list(products)})
+
+@api_view(["PATCH"])
+def update_order_status(request, pk):
+    try:
+        order = OrderProducts.objects.get(order_id=pk)
+    except OrderProducts.DoesNotExist:
+        return Response({"error": "Order not found"}, status=404)
+
+    new_status = request.data.get("status")
+
+    if new_status not in ["Pending", "Paid"]:
+        return Response({"error": "Invalid status"}, status=400)
+
+    order.status = new_status
+    order.save()
+
+    return Response({
+        "message": "Order status updated",
+        "order_id": order.order_id,
+        "status": order.status,
+    })
+
