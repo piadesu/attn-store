@@ -24,6 +24,7 @@ export default function EditProduct() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+  const [categories, setCategories] = useState([]);
 
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function EditProduct() {
         setProduct((prev) => ({
           ...prev,
           name: data.name ?? "",
-          category: data.category ?? "",
+          category: data.category?.id ?? "",
           cost_price: data.cost_price ?? "",
           selling_price: data.selling_price ?? "",
           stock: data.stock ?? 1,
@@ -60,6 +61,17 @@ export default function EditProduct() {
         setError({ fetch: "Unable to load product. " });
       })
       .finally(() => setLoading(false));
+
+    fetch("http://127.0.0.1:8000/api/categories/")
+      .then((res) => res.json())
+      .then((data) => {
+        if (mounted) setCategories(data);
+      })
+      .catch((err) => console.error("Error fetching categories:", err));
+
+    return () => {
+      mounted = false;
+    };
   }, [id]);
 
   //when new image file is selected, update preview
@@ -113,7 +125,7 @@ export default function EditProduct() {
       const formData = new FormData();
       //append product fields to formdata
       formData.append("name", product.name);
-      formData.append("category", product.category);
+      formData.append("category_id", product.category);
       formData.append("cost_price", product.cost_price);
       formData.append("selling_price", product.selling_price);
       formData.append("stock_status", product.stock_status);
@@ -214,9 +226,11 @@ export default function EditProduct() {
             transition-all
             cursor-pointer">
               <option value="">Select Category</option>
-              {/* --to be changed with category from DATABASE */}
-              <option value="Electronics">Electronics</option>
-              <option value="Clothing">Clothing</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
