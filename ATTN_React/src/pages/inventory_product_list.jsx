@@ -10,80 +10,68 @@ function ViewProductModal({ isOpen, onClose, product, onEdit }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-lg p-6 w-[90%] max-w-lg relative">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50">
+  <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl p-8 w-[90%] max-w-lg relative animate-fadeIn">
 
-        {/* close button */}
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 font-bold">
-          ✕
-        </button>
-        <h2 className="text-xl font-bold mb-4 text-[#4D1C0A] border-b pb-2">Product Details</h2>
+    {/* Close Button */}
+    <button 
+      onClick={onClose} 
+      className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition text-xl"
+    >
+      ✕
+    </button>
 
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm text-gray-500">Product Image</p>
+    <h2 className="text-2xl font-bold mb-6 text-[#4D1C0A] border-b pb-2">Product Details</h2>
+
+    <div className="space-y-6">
+
+      {/* Product Image */}
+      <div className="flex justify-center">
+        {product.image ? (
+          <img
+            src={`http://127.0.0.1:8000${product.image}`}
+            className="w-40 h-40 rounded-xl object-cover shadow-md"
+          />
+        ) : (
+          <div className="w-40 h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-300">
+            No Image
           </div>
-          <div>
-            {product.image && (
-              <img
-                src={`http://127.0.0.1:8000${product.image}`}
-                className="w-30 h-24 rounded-lg object-cover"
-              />
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <p className="text-sm text-gray-500">Name of Product</p>
-              <div className="border border-gray-300 pl-2 p-1 mt-2 rounded-lg bg-gray-100">
-                <p className="text-md font-semibold text-gray-600">{product.name}</p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-gray-500">Category</p>
-              <div className="border border-gray-300 pl-2 p-1 mt-2 mt-2 rounded-lg bg-gray-100">
-                <p className="text-md font-semibold text-gray-600">{product.category}</p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-gray-500">Cost Price</p>
-              <div className="border border-gray-300 pl-2 p-1 mt-2 rounded-lg bg-gray-100">
-                <p className="text-md font-semibold text-gray-600">₱ {product.cost_price}</p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-gray-500">Selling Price</p>
-              <div className="border border-gray-300 pl-2 p-1 mt-2 rounded-lg bg-gray-100">
-                <p className="text-md font-semibold text-gray-600">₱ {product.selling_price}</p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-gray-500">Stock Status</p>
-              <div className="border border-gray-300 pl-2 p-1 mt-2 rounded-lg bg-gray-100">
-                <p className="text-md font-semibold text-gray-600">{product.stock_status ? "In-stock" : "Out of Stock"}</p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm text-gray-500">Stock Quantity</p>
-              <div className="border border-gray-300 pl-2 p-1 mt-2 rounded-lg bg-gray-100">
-                <p className="text-md font-semibold text-gray-600">{product.stock}</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={() => navigate(`/inventory_edit_product/${product.id}`)} className="bg-[#F8961E] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#e78c1c] transition">Edit</button>
-        </div>
-
+        )}
       </div>
+
+      {/* Product Details Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {[
+          { label: "Name", value: product.display_name || product.name },
+          { label: "Category", value: product.category?.name || "N/A" },
+          { label: "Cost Price", value: `₱ ${product.cost_price}` },
+          { label: "Selling Price", value: `₱ ${product.selling_price}` },
+          { label: "Stock Status", value: product.stock_status ? "In-stock" : "Out of Stock" },
+          { label: "Stock Quantity", value: product.stock },
+        ].map((item) => (
+          <div key={item.label} className="flex flex-col">
+            <span className="text-sm text-gray-500">{item.label}</span>
+            <div className="mt-1 p-2 rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition">
+              <p className="text-md font-medium text-gray-700">{item.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
     </div>
+
+    {/* Action Button */}
+    <div className="flex justify-end mt-8">
+      <button 
+        onClick={() => navigate(`/inventory_edit_product/${product.id}`)} 
+        className="bg-gradient-to-r from-[#F8961E] to-[#FFB057] text-white px-6 py-2 rounded-xl font-semibold hover:from-[#e78c1c] hover:to-[#f7a541] transition shadow-md"
+      >
+        Edit
+      </button>
+    </div>
+
+  </div>
+</div>
   );
 }
 
@@ -99,6 +87,7 @@ function ProductList() {
   const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [categories, setCategories] = useState([]);
 
 
   useEffect(() => {
@@ -108,15 +97,25 @@ function ProductList() {
         setProducts(data);
       })
       .catch((err) => console.error("Error fetching products: ", err));
+
+    fetch("http://127.0.0.1:8000/api/categories/")
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data);
+      })
+      .catch((err) => console.error("Error fetching categories:", err));
   }, []);
 
   const filteredProducts = products.filter((item) => {
+    const categoryName = typeof item.category === 'object' ? (item.category?.name || '') : (item.category || '');
+    const itemName = (item.display_name || item.name || '').toString();
+    
     const matchesSearch =
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.category.toLowerCase().includes(search.toLowerCase());
+      itemName.toLowerCase().includes(search.toLowerCase()) ||
+      categoryName.toLowerCase().includes(search.toLowerCase());
 
     const matchesCategory =
-      filterCaategory === "" || item.category === filterCaategory;
+      filterCaategory === "" || categoryName === filterCaategory;
 
     return matchesSearch && matchesCategory;
   });
@@ -204,21 +203,11 @@ function ProductList() {
             onChange={(e) => setFilterCategory(e.target.value)}
           >
             <option value="">All Categories</option>
-            <option value="Electronics">Electronics</option>
-            <option value="Clothing">Clothing</option>
-
-            {/* Filter Icon */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 512 512"
-              className="w-5 h-5"
-              fill="#4D170A"
-            >
-              <path d="M32 64C19.1 64 7.4 71.8 2.4 83.8S.2 
-              109.5 9.4 118.6L192 301.3 192 416c0 8.5 3.4 16.6 9.4 22.6l64 
-              64c9.2 9.2 22.9 11.9 34.9 6.9S320 492.9 320 480l0-178.7 
-              182.6-182.6c9.2-9.2 11.9-22.9 6.9-34.9S492.9 64 480 64L32 64z"/>
-            </svg>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.name}>
+                {cat.name}
+              </option>
+            ))}
           </select>
 
         </div>
@@ -247,9 +236,9 @@ function ProductList() {
               </tr>
             ) : (
               filteredProducts.map((prod) => (
-                <tr key={prod.id} className="border-b">
-                  <td className="p-3 text-gray-700 font-medium">{prod.name}</td>
-                  <td className="p-3 text-gray-500">{prod.category}</td>
+                <tr key={prod.id} className={`${prod.stock <= 10 ? "bg-red-100 text-red-700" : ""}`}>
+                  <td className="p-3 text-gray-700 font-medium">{prod.display_name || prod.name}</td>
+                  <td className="p-3 text-gray-500">{prod.category?.name || 'N/A'}</td>
                   <td className="p-3 text-gray-500">₱ {prod.cost_price}</td>
                   <td className="p-3 text-gray-500">₱ {prod.selling_price}</td>
                   <td className="p-3 text-gray-500">
