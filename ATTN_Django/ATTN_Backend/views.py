@@ -5,6 +5,8 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import generics
+
 from rest_framework.views import APIView
 
 from django.contrib.auth.hashers import make_password
@@ -12,7 +14,9 @@ from django.contrib.auth.hashers import check_password
 
 
 from .models import Product
+from .models import Category
 from .serializers import ProductSerializer
+from .serializers import CategorySerializer
 
 from .models import TransactionList
 from .serializers import TransactionSerializer
@@ -35,6 +39,10 @@ def website_description(request):
 
     # Return JSON response
     return JsonResponse({"recipes": recipes_list})
+
+class CategoryListCreateview(generics.ListCreateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
@@ -71,6 +79,8 @@ def product_detail(request, pk):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
 
 
 @api_view(['GET'])

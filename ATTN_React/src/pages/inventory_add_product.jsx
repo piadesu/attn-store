@@ -8,6 +8,97 @@ import { useState, useEffect } from "react";
 
 import { use } from "react";
 
+// Modal component for adding a new category
+function AddCategoryModal({ isOpen, onClose, onCategoryAdded }) {
+  const [categoryName, setCategoryName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!categoryName.trim()) {
+      setError("Category name is required");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/categories/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: categoryName }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Failed to add category");
+      }
+
+      const newCategory = await res.json();
+      onCategoryAdded(newCategory);
+      setCategoryName("");
+      onClose();
+    } catch (err) {
+      console.error("Error adding category:", err);
+      setError(err.message || "Error adding category");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-lg p-6 w-[90%] max-w-md">
+        <h2 className="text-lg font-bold text-[#4D1C0A] mb-4">Add New Category</h2>
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category Name
+            </label>
+            <input
+              type="text"
+              value={categoryName}
+              onChange={(e) => setCategoryName(e.target.value)}
+              placeholder="Enter category name"
+              className="w-full border rounded-lg p-2 border-gray-300 text-gray-800
+              focus:outline-none
+              focus:ring-2 focus:ring-[#F8961E]/50
+              focus:border-[#F8961E]
+              transition-all"
+            />
+          </div>
+
+          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border rounded-lg text-gray-500 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-[#F8961E] text-white rounded-lg hover:bg-[#f7a136] disabled:opacity-50"
+            >
+              {loading ? "Adding..." : "Add Category"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function ImageUpload({ onFileSelect }) {
   const [preview, setPreview] = useState(null);
   const [dragActive, setDragActive] = useState(false);
@@ -40,7 +131,6 @@ function ImageUpload({ onFileSelect }) {
   const handleChange = (e) => {
     const selectedFile = e.target.files[0];
     handleFile(selectedFile);
-
   };
 
   return (
@@ -89,16 +179,31 @@ function AddProduct() {
     is_active: true,
   });
 
-  //for image upload
+  const [categories, setCategories] = useState([]);
   const [image, setImage] = useState(null);
+  const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  //for notif
-  const [notification, setNotification] = useState({show: false,message: "",type: "success"});
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/categories/")
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data);
+      })
+      .catch((err) => console.error("Error fetching categories:", err));
+  }, []);
 
   //handles field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProduct({ ...product, [name]: value });
+  };
+
+  // Handle new category added
+  const handleCategoryAdded = (newCategory) => {
+    setCategories([...categories, newCategory]);
+    setProduct({ ...product, category: newCategory.id || newCategory.name });
   };
 
   //handles quantity 
@@ -130,7 +235,12 @@ function AddProduct() {
 
     //append product details to formData
     Object.entries(product).forEach(([key, value]) => {
-      formData.append(key, value);
+      // Convert "category" key to "category_id" for the backend
+      if (key === 'category') {
+        formData.append('category_id', value);
+      } else {
+        formData.append(key, value);
+      }
     });
 
     //append image
@@ -145,13 +255,17 @@ function AddProduct() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Failed to add product");
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Error response data: ", errorData);
+        throw new Error("Failed to add product");
+      }
 
       const data = await res.json();
-      setNotification({show: true, message: "Product added successfully!", type: "success"});
-      setTimeout(() => 
-        setNotification({show: false, message: "", type: "success"}), 3000);
-        console.log("Response data:", data);
+      setNotification({ show: true, message: "Product added successfully!", type: "success" });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
+      console.log("Response data:", data);
 
       //clear fields
       setProduct({
@@ -168,7 +282,9 @@ function AddProduct() {
 
     } catch (err) {
       console.error("Error data: ", err);
-      alert("Error adding product.");
+      setNotification({ show: true, message: "Error adding product.", type: "error" });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
     }
   };
 
@@ -176,23 +292,28 @@ function AddProduct() {
     <div>
       {/* notif */}
       {notification.show && (
-  <div className="toast toast-top toast-end z-50">
-    <div 
-      className={`alert ${
-        notification.type === "success"
-          ? "alert-success"
-          : "alert-error"
-      } shadow-lg`}
-    >
-      <div>
-        <span className="font-semibold">
-          {notification.message}
-        </span>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="toast toast-top toast-end z-50">
+          <div
+            className={`alert ${notification.type === "success"
+                ? "alert-success"
+                : "alert-error"
+              } shadow-lg`}
+          >
+            <div>
+              <span className="font-semibold">
+                {notification.message}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Add Category Modal */}
+      <AddCategoryModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        onCategoryAdded={handleCategoryAdded}
+      />
 
       {/*first section */}
       <form onSubmit={handleSubmit} >
@@ -209,7 +330,7 @@ function AddProduct() {
                 <label className="block text-sm font-medium text-gray-700">
                   Product Name
                 </label>
-                <input type="text" name="name" value={product.name} onChange={handleChange}
+                <input type="text" name="name" placeholder="Enter product name" value={product.name} onChange={handleChange}
                   className="w-full border rounded-lg p-2 mt-1
               border-gray-300 text-gray-800
               focus:outline-none
@@ -220,21 +341,31 @@ function AddProduct() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">Category</label>
-                <select name="category" value={product.category} onChange={handleChange}
-                  className="w-full border rounded-lg p-2 mt-1 
-            border-gray-300 text-gray-800
-            focus:outline-none
-            focus:ring-2 focus:ring-[#F8961E]/50
-            focus:border-[#F8961E]
-            transition-all
-            cursor-pointer">
-                  <option value="">Select category</option>
-                  {/* --to be changed with category from DATABASE */}
-                  <option value="Electronics">Electronics</option>
-                  <option value="Clothing">Clothing</option>
-                </select>
-
-
+                <div className="flex gap-2 mt-1">
+                  <select name="category" value={product.category} onChange={handleChange}
+                    className="flex-1 border rounded-lg p-2
+              border-gray-300 text-gray-800
+              focus:outline-none
+              focus:ring-2 focus:ring-[#F8961E]/50
+              focus:border-[#F8961E]
+              transition-all
+              cursor-pointer">
+                    <option value="">Select category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id || cat.name} value={cat.id || cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModal(true)}
+                    className="px-3 py-2 bg-[#F8961E] text-white rounded-lg hover:bg-[#f7a136] transition font-semibold"
+                    title="Add new category"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -272,30 +403,36 @@ function AddProduct() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">Cost Price</label>
-                <input type="text" name="cost_price" value={product.cost_price} onChange={handleChange} placeholder="₱ 0.00"
-                  className="w-full border border-gray-300 
-            rounded-lg p-2 mt-1 text-gray-800
-            bg-white
-            focus:outline-none
-            focus:ring-2 focus:ring-[#F8961E]/50
-            focus:border-[#F8961E]
-            transition-all
-            appearance-none
-            cursor-pointer" />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₱</span>
+                  <input type="text" name="cost_price" value={product.cost_price} onChange={handleChange} placeholder="0.00"
+                    className="w-full border border-gray-300 
+                  rounded-lg p-2 pl-6 mt-1 text-gray-800
+                  bg-white
+                  focus:outline-none
+                  focus:ring-2 focus:ring-[#F8961E]/50
+                  focus:border-[#F8961E]
+                  transition-all
+                  appearance-none
+                  cursor-pointer" />
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">Selling Price</label>
-                <input type="text" name="selling_price" value={product.selling_price} onChange={handleChange} placeholder="₱ 0.00"
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">₱</span>
+                <input type="text" name="selling_price" value={product.selling_price} onChange={handleChange} placeholder="0.00"
                   className="w-full border border-gray-300 
-            rounded-lg p-2 mt-1 text-gray-800
-            bg-white
-            focus:outline-none
-            focus:ring-2 focus:ring-[#F8961E]/50
-            focus:border-[#F8961E]
-            transition-all
-            appearance-none
-            cursor-pointer" />
+                  rounded-lg p-2 pl-6 mt-1 text-gray-800
+                  bg-white
+                  focus:outline-none
+                  focus:ring-2 focus:ring-[#F8961E]/50
+                  focus:border-[#F8961E]
+                  transition-all
+                  appearance-none
+                  cursor-pointer" />
+                </div>
               </div>
             </div>
           </div>

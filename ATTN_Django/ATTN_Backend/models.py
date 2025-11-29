@@ -4,15 +4,20 @@ from datetime import date
 from django.contrib.auth.hashers import make_password, check_password
 
 
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+    
 class Product(models.Model):
     name = models.CharField(max_length=255)
-    category = models.CharField(max_length=100)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     stock = models.IntegerField(default=0)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2)
     selling_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     stock_status = models.BooleanField(default=True) 
     is_active = models.BooleanField(default=True)
-
 
     image = models.ImageField(upload_to='products/', blank=True, null=True)
 
@@ -23,7 +28,11 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
-    
+
+    def save(self, *args, **kwargs):
+        # Convert product name to lowercase before saving
+        self.name = self.name.lower()
+        super().save(*args, **kwargs)
 
 class Inventory(models.Model):
     name = models.CharField(max_length=100)
