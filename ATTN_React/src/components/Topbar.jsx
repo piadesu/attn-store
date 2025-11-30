@@ -140,7 +140,7 @@ function Topbar({ onMenuClick, pageTitle }) {
                       <div
                         key={notif.id}
                         onClick={() => handleNotificationClick(notif.productName)}
-                        className="text-sm px-2 py-1 rounded-md flex items-start gap-2 bg-[#FBEED7] cursor-pointer hover:bg-[#f6e4c0]"
+                        className="text-sm text-gray-700 px-2 py-1 rounded-md flex items-start gap-2 bg-[#FBEED7] cursor-pointer hover:bg-[#f6e4c0]"
                       >
                         <AlertTriangle size={14} className="text-red-500 mt-0.5" />
                         <span>{notif.message}</span>

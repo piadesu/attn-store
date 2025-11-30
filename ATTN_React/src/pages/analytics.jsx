@@ -76,6 +76,12 @@ function Analytics() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch ordered items directly (like dashboard does)
+        const itemsRes = await fetch("http://127.0.0.1:8000/api/ordereditem/");
+        if (!itemsRes.ok) throw new Error(`Failed to fetch ordered items: ${itemsRes.status}`);
+        const orderedItems = await itemsRes.json();
+
+        // Fetch orders to get order dates
         const ordersRes = await fetch("http://127.0.0.1:8000/api/orders/");
         if (!ordersRes.ok) throw new Error(`Failed to fetch orders: ${ordersRes.status}`);
         const orders = await ordersRes.json();
@@ -84,11 +90,12 @@ function Analytics() {
         if (!productsRes.ok) throw new Error(`Failed to fetch products: ${productsRes.status}`);
         const productsData = await productsRes.json();
 
+        console.log("Fetched ordered items:", orderedItems);
         console.log("Fetched orders:", orders);
         console.log("Fetched products:", productsData);
         
         setProducts(productsData);
-        processSalesData(orders, productsData);
+        processSalesData(orderedItems, orders, productsData);
       } catch (err) {
         console.error("Fetch error:", err);
         setError(err.message);
@@ -97,16 +104,24 @@ function Analytics() {
       }
     };
 
+    console.log('Analytics mounted — fetching data');
     fetchData();
+    return () => console.log('Analytics unmounted');
   }, []);
 
-  const processSalesData = (orders, productsData) => {
-    if (!orders || orders.length === 0) {
+  const processSalesData = (orderedItems, orders, productsData) => {
+    if (!orderedItems || orderedItems.length === 0) {
       setDataInfo("No orders found in database");
       setSalesData([]);
       setRestockData([]);
       return;
     }
+
+    // Create a map of order_id to order_date for quick lookup
+    const orderDateMap = {};
+    orders.forEach((order) => {
+      orderDateMap[order.order_id] = order.order_date;
+    });
 
     const productWeeks = {};
     
@@ -119,40 +134,46 @@ function Analytics() {
     let totalWeeks = new Set();
     let processedItems = 0;
 
-    orders.forEach((order) => {
-      const orderDate = new Date(order.order_date);
+    orderedItems.forEach((item) => {
+      processedItems++;
+      
+      // Get order date from the orderDateMap or from item.order_date (if available)
+      const orderDateStr = item.order_date || orderDateMap[item.order];
+      if (!orderDateStr) {
+        console.warn(`Item missing order date:`, item);
+        return;
+      }
+      
+      const orderDate = new Date(orderDateStr);
       const weekNum = getWeekKey(orderDate);
       totalWeeks.add(weekNum);
       
       if (!earliestDate || orderDate < earliestDate) earliestDate = orderDate;
       if (!latestDate || orderDate > latestDate) latestDate = orderDate;
 
-      if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
-        console.warn(`Order ${order.order_id} has no items`);
+      const name = (item.product_name || "").toLowerCase().trim();
+      if (!name) {
+        console.warn(`Item missing product_name:`, item);
         return;
       }
+      
+      const qty = parseInt(item.qty) || 0;
 
-      order.items.forEach((item) => {
-        processedItems++;
-        const name = item.product_name.toLowerCase().trim();
-        const qty = parseInt(item.qty) || 0;
+      if (!productWeeks[name]) {
+        productWeeks[name] = {
+          weeks: {},
+          currentWeekSales: 0
+        };
+      }
 
-        if (!productWeeks[name]) {
-          productWeeks[name] = {
-            weeks: {},
-            currentWeekSales: 0
-          };
-        }
+      if (!productWeeks[name].weeks[weekNum]) {
+        productWeeks[name].weeks[weekNum] = 0;
+      }
+      productWeeks[name].weeks[weekNum] += qty;
 
-        if (!productWeeks[name].weeks[weekNum]) {
-          productWeeks[name].weeks[weekNum] = 0;
-        }
-        productWeeks[name].weeks[weekNum] += qty;
-
-        if (orderDate >= oneWeekAgo && orderDate <= now) {
-          productWeeks[name].currentWeekSales += qty;
-        }
-      });
+      if (orderDate >= oneWeekAgo && orderDate <= now) {
+        productWeeks[name].currentWeekSales += qty;
+      }
     });
 
     console.log(`Processed ${processedItems} items from ${orders.length} orders`);
@@ -177,7 +198,13 @@ function Analytics() {
     });
 
     chartData.sort((a, b) => b.thisWeek - a.thisWeek);
-    setSalesData(chartData.slice(0, 10));
+    const top = chartData.slice(0, 10).map((d) => ({
+      ...d,
+      thisWeek: Number(d.thisWeek) || 0,
+      nextWeek: Number(d.nextWeek) || 0,
+    }));
+    console.log('Processed chartData (top):', top);
+    setSalesData(top);
 
     const restockRecommendations = productsData.map((product) => {
       const productName = (product.display_name || product.name).toLowerCase().trim();
@@ -281,10 +308,10 @@ function Analytics() {
 
       {urgentNotifications.length > 0 && (
         <div className="bg-white border-l-4 border-[#F8961E] p-4 mb-6 rounded-md shadow-sm">
-          <div className="flex items-start">
+          <div className="flex items-start text-gray-700">
             <AlertTriangle className="h-6 w-6 text-[#F8961E] mr-3 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="text-[#4D1C0A] font-bold mb-3 text-lg">⚠️ Urgent Stock Alerts</h3>
+              <h3 className="text-[#4D1C0A] font-bold mb-3 text-lg">Urgent Stock Alerts</h3>
               <div className="space-y-2">
                 {urgentNotifications.slice(0, 5).map((item) => (
                   <div key={item.id} className="flex items-start bg-gray-50 rounded-md p-2 border border-[#F8961E]/20">
@@ -355,13 +382,13 @@ function Analytics() {
           </div>
           
           {/* Search Bar */}
-          <div className="relative w-full sm:w-64">
+          <div className="w-full sm:w-64">
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search products"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-[#F8961E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F8961E] focus:border-transparent"
+              className="w-full px-4 py-2 text-gray-700 border border-[#F8961E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F8961E] focus:border-transparent"
             />
             {searchQuery && (
               <button
@@ -413,7 +440,7 @@ function Analytics() {
                           : ""
                       }`}
                     >
-                      <td className="p-3 font-medium">{item.productName}</td>
+                      <td className="p-3 font-medium text-gray-700">{item.productName}</td>
                       <td className="p-3">
                         <span className={`font-semibold ${
                           isOutOfStock 

@@ -109,6 +109,8 @@ export default function Dashboard() {
       </div>
 
       {/* ====== ANALYTICS - DAILY SALES ====== */}
+      <div>
+        <h2 className="font-bold text-xl text-[#4D1C0A]">Statistics</h2>
       <div className="bg-white border border-[#F8961E]/30 rounded-lg p-6 shadow-sm mt-6">
         <h2 className="text-lg font-semibold text-gray-700 mb-2">
           Daily Sales (Past 7 Days)
@@ -125,6 +127,7 @@ export default function Dashboard() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+      </div>
       </div>
 
       {/* ====== ANALYTICS - TOP 5 PRODUCTS ====== */}
