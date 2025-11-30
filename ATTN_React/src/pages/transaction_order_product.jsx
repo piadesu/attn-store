@@ -19,9 +19,10 @@ function OrderProduct() {
   });
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+  const [searchTerm, setSearchTerm] = useState(""); // 🔍 ADDED
 
   // -----------------------------
-  // FETCH PRODUCTS FROM DJANGO API
+  // FETCH PRODUCTS FROM API
   // -----------------------------
   useEffect(() => {
     fetch("http://localhost:8000/api/products/")
@@ -117,20 +118,13 @@ function OrderProduct() {
     }
 
     const isPaid = statusType === "Paid";
-
-    // ✔ Get today's date YYYY-MM-DD
     const today = new Date().toISOString().split("T")[0];
 
     const orderPayload = {
       status: statusType,
-
-      cus_name: isPaid ? "N/A" : (customerData.name || null),
-      contact_num: isPaid ? "N/A" : (customerData.phone || null),
-
-      // ✔ SET TODAY'S DATE IF PAID  
-      due_date: isPaid
-        ? today                // ← payment completed date
-        : formatDate(customerData.dueDate),
+      cus_name: isPaid ? "N/A" : customerData.name || null,
+      contact_num: isPaid ? "N/A" : customerData.phone || null,
+      due_date: isPaid ? today : formatDate(customerData.dueDate),
 
       total_amt: orderItems.reduce(
         (sum, item) => sum + item.selling_price * item.qty,
@@ -179,15 +173,14 @@ function OrderProduct() {
       });
   };
 
-
   return (
     <div className="p-6 space-y-8">
+
+      {/* TOAST */}
       {notification.show && (
         <div className="toast toast-top toast-end z-50">
           <div className={`alert ${notification.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg`}>
-            <div>
-              <span className="font-semibold">{notification.message}</span>
-            </div>
+            <span className="font-semibold">{notification.message}</span>
           </div>
         </div>
       )}
@@ -197,12 +190,15 @@ function OrderProduct() {
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-[#4D1C0A]">Product List</h1>
 
+          {/* 🔍 SEARCH BAR */}
           <div className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md">
             <Search className="w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search..."
               className="outline-none bg-transparent text-sm text-gray-700 placeholder-gray-400 w-40"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -219,35 +215,38 @@ function OrderProduct() {
             </thead>
 
             <tbody>
-              {products.map((p, index) => (
-                <tr
-                  key={p.id}
-                  className={` ${
-                    p.stock === 0 ? "bg-red-50 text-gray-400" : "hover:bg-gray-50"
-                  }`}
-                >
-                  <td className="py-2 px-3 text-left">
-                    <input
-                      type="checkbox"
-                      disabled={p.stock === 0}
-                      checked={p.checked}
-                      onChange={() => handleCheckboxChange(index)}
-                    />
-                  </td>
+              {products
+                .filter((p) =>
+                  p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  p.category.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((p, index) => (
+                  <tr
+                    key={p.id}
+                    className={`${p.stock === 0 ? "bg-red-50 text-gray-400" : "hover:bg-gray-50"}`}
+                  >
+                    <td className="py-2 px-3 text-left">
+                      <input
+                        type="checkbox"
+                        disabled={p.stock === 0}
+                        checked={p.checked}
+                        onChange={() => handleCheckboxChange(index)}
+                      />
+                    </td>
 
-                  <td className="py-2 px-3 text-left font-medium">
-                    {p.name}
-                    {p.stock === 0 && (
-                      <span className="text-red-500 font-semibold ml-2">
-                        (Out of Stock)
-                      </span>
-                    )}
-                  </td>
+                    <td className="py-2 px-3 text-left font-medium">
+                      {p.name}
+                      {p.stock === 0 && (
+                        <span className="text-red-500 font-semibold ml-2">
+                          (Out of Stock)
+                        </span>
+                      )}
+                    </td>
 
-                  <td className="py-2 px-3 text-left">{p.category}</td>
-                  <td className="py-2 px-3 text-left">₱{p.selling_price}</td>
-                </tr>
-              ))}
+                    <td className="py-2 px-3 text-left">{p.category}</td>
+                    <td className="py-2 px-3 text-left">₱{p.selling_price}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -264,7 +263,9 @@ function OrderProduct() {
 
       {/* ORDER DETAILS */}
       <div className="bg-white p-6 rounded-xl border border-[#A29E9E] shadow-sm">
-        <h1 className="text-xl font-bold text-[#4D1C0A] mb-4 pb-4 border-b border-[#4D1C0A]">Order Details</h1>
+        <h1 className="text-xl font-bold text-[#4D1C0A] mb-4 pb-4 border-b border-[#4D1C0A]">
+          Order Details
+        </h1>
 
         <div className="rounded-lg">
           {orderItems.map((p, index) => {
@@ -288,9 +289,13 @@ function OrderProduct() {
                 </div>
 
                 <div className="flex justify-center">
-                  <button className="border px-2 mr-2 rounded-lg" onClick={() => updateQty(index, "dec")}>-</button>
+                  <button className="border px-2 mr-2 rounded-lg" onClick={() => updateQty(index, "dec")}>
+                    -
+                  </button>
                   <span className="mx-2">{p.qty}</span>
-                  <button className="border px-2 ml-2 rounded-lg" onClick={() => updateQty(index, "inc")}>+</button>
+                  <button className="border px-2 ml-2 rounded-lg" onClick={() => updateQty(index, "inc")}>
+                    +
+                  </button>
                 </div>
 
                 <div className="text-right font-medium">₱{subtotal}</div>
@@ -320,7 +325,7 @@ function OrderProduct() {
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* CUSTOMER MODAL */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
           <div className="bg-white w-[600px] rounded-xl p-8 relative shadow-xl">
@@ -359,10 +364,7 @@ function OrderProduct() {
                   className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.phone}
                   onChange={(e) =>
-                    setCustomerData({
-                      ...customerData,
-                      phone: e.target.value,
-                    })
+                    setCustomerData({ ...customerData, phone: e.target.value })
                   }
                 />
               </div>
@@ -376,10 +378,7 @@ function OrderProduct() {
                   className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.dueDate}
                   onChange={(e) =>
-                    setCustomerData({
-                      ...customerData,
-                      dueDate: e.target.value,
-                    })
+                    setCustomerData({ ...customerData, dueDate: e.target.value })
                   }
                 />
               </div>
