@@ -1,46 +1,113 @@
-import { useState } from "react";
-import { Bell, User, ChevronDown, Menu } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, User, ChevronDown, Menu, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-function Topbar({ onMenuClick, pageTitle  }) {
+function Topbar({ onMenuClick, pageTitle }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
-  const notifications = [
-    { id: 1, message: "New order received!", read: false },
-    { id: 2, message: "Inventory updated.", read: true },
-  ];
+  const [notifications, setNotifications] = useState([]);
+  const navigate = useNavigate();
+
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const ordersRes = await fetch("http://127.0.0.1:8000/api/orders/");
+        const orders = await ordersRes.json();
+
+        const productsRes = await fetch("http://127.0.0.1:8000/api/products/");
+        const products = await productsRes.json();
+
+        const stockNotifications = generateStockNotifications(orders, products);
+        setNotifications(stockNotifications);
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+
+    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Generate stock notifications
+  const generateStockNotifications = (orders, products) => {
+    const productWeeks = {};
+
+    orders.forEach((order) => {
+      if (!order.items) return;
+
+      order.items.forEach((item) => {
+        const name = item.product_name.toLowerCase().trim();
+        const qty = parseInt(item.qty) || 0;
+
+        if (!productWeeks[name]) productWeeks[name] = { total: 0 };
+        productWeeks[name].total += qty;
+      });
+    });
+
+    const stockNotifications = [];
+
+    products.forEach((product) => {
+      const productName = (product.display_name || product.name).toLowerCase();
+      const weeklyDemand = productWeeks[productName]?.total || 0;
+      const dailyDemand = weeklyDemand / 7;
+      const daysLeft = dailyDemand > 0 ? Math.floor(product.stock / dailyDemand) : null;
+
+      if (product.stock === 0) {
+        stockNotifications.push({
+          id: product.id,
+          productName: product.display_name || product.name,
+          message: `${product.display_name || product.name} is OUT OF STOCK!`,
+          read: false,
+        });
+      } else if (daysLeft !== null && daysLeft <= 5) {
+        stockNotifications.push({
+          id: product.id,
+          productName: product.display_name || product.name,
+          message: `${product.display_name || product.name} will run out in ${daysLeft} day(s)`,
+          read: false,
+        });
+      }
+    });
+
+    return stockNotifications;
+  };
+
+  // When clicking a notification → go to analytics WITH product highlight
+  const handleNotificationClick = (productName) => {
+    const encoded = encodeURIComponent(productName);
+    navigate(`/analytics?product=${encoded}`);
+    setIsDropdownOpen(false);
+  };
 
   return (
-    
-    <div className="h-16 bg-white shadow-md flex items-center justify-between px-4 sm:px-6 top-0 left-0 z-30 relative">
-      {/* Left Section */}
+    <div className="h-16 bg-white shadow-md flex items-center justify-between px-4 sm:px-6 z-30 relative">
+      {/* Left */}
       <div className="flex items-center gap-3">
-        {/* Hamburger (visible only on mobile) */}
         <button
           onClick={onMenuClick}
-          className="block lg:hidden text-[#4D1C0A] p-2 rounded-md border border-[#4D1C0A] hover:bg-[#4D1C0A]/10 transition"
+          className="block lg:hidden text-[#4D1C0A] p-2 rounded-md border border-[#4D1C0A]"
         >
           <Menu size={24} />
         </button>
 
-        {/* DASHBOARD title (desktop only) */}
-        <h1 className="hidden lg:block text-2xl font-bold text-[#4D1C0A] leading-tight">
+        <h1 className="hidden lg:block text-2xl font-bold text-[#4D1C0A]">
           {pageTitle}
         </h1>
       </div>
 
-      {/* Centered logo (mobile only) */}
+      {/* Mobile Logo */}
       <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 lg:hidden">
-        <h1 className="text-2xl font-bold text-[#F8961E] leading-tight">ATTN</h1>
-        <p className="mr-7 text-gray-700 text-sm tracking-wide">STORE</p>
+        <h1 className="text-2xl font-bold text-[#F8961E]">ATTN</h1>
+        <p className="mr-7 text-gray-700 text-sm">STORE</p>
       </div>
 
-      {/* Right Section (User Info) */}
+      {/* Right */}
       <div className="flex items-center gap-6">
-      
-
         <div className="relative">
           <div
-            className="flex items-center gap-2 cursor-pointer select-none"
+            className="flex items-center gap-2 cursor-pointer"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             <div className="p-2 border border-[#4D1C0A] rounded-full text-[#4D1C0A]">
@@ -51,16 +118,15 @@ function Topbar({ onMenuClick, pageTitle  }) {
             </span>
             <ChevronDown
               size={18}
-              className={`text-[#4D1C0A] transition-transform duration-200 ${
+              className={`text-[#4D1C0A] transition-transform ${
                 isDropdownOpen ? "rotate-180" : ""
               }`}
             />
           </div>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg border border-gray-200 py-2">
-                {/* Notifications Section */}
-              <div className="px-4 py-2 border-b border-gray-200">
+            <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border py-2">
+              <div className="px-4 py-2 border-b">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[#4D1C0A] font-semibold text-sm">
                     Notifications
@@ -69,17 +135,15 @@ function Topbar({ onMenuClick, pageTitle  }) {
                 </div>
 
                 {notifications.length > 0 ? (
-                  <div className="max-h-32 overflow-y-auto">
+                  <div className="max-h-32 overflow-y-auto space-y-1">
                     {notifications.map((notif) => (
                       <div
                         key={notif.id}
-                        className={`text-sm px-2 py-1 rounded-md ${
-                          notif.read
-                            ? "text-gray-500"
-                            : "text-[#4D1C0A] font-medium bg-[#FBEED7]"
-                        }`}
+                        onClick={() => handleNotificationClick(notif.productName)}
+                        className="text-sm px-2 py-1 rounded-md flex items-start gap-2 bg-[#FBEED7] cursor-pointer hover:bg-[#f6e4c0]"
                       >
-                        {notif.message}
+                        <AlertTriangle size={14} className="text-red-500 mt-0.5" />
+                        <span>{notif.message}</span>
                       </div>
                     ))}
                   </div>
@@ -87,19 +151,15 @@ function Topbar({ onMenuClick, pageTitle  }) {
                   <p className="text-xs text-gray-400 italic">No notifications</p>
                 )}
               </div>
-                {/* Edit Profile Button */}
+
               <button
                 onClick={() => alert("Edit Profile clicked!")}
-                className="w-full text-left px-4 py-2 text-[#4D1C0A] hover:bg-[#4D1C0A]/10 transition"
+                className="w-full text-left px-4 py-2 text-[#4D1C0A] hover:bg-[#4D1C0A]/10"
               >
                 Edit Profile
               </button>
             </div>
-
-            
-            
           )}
-          
         </div>
       </div>
     </div>

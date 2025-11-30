@@ -91,3 +91,20 @@ class Account(models.Model):
 
     class Meta:
         db_table = 'ATTN_Backend_accounts'
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('low_stock', 'Low Stock Warning'),
+        ('out_of_stock', 'Out of Stock Alert'),
+        ('restock_soon', 'Restock Soon'),
+    ]
+    
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    message = models.TextField()
+    days_until_stockout = models.IntegerField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']

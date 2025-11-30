@@ -222,7 +222,7 @@ function Navbar({ isOpen, onClose }) {
             {/* 🟧 Analytics */}
             <li>
               <button
-                onClick={() => handleItemClick("Analytics")}
+                onClick={() => handleItemClick("Analytics","/analytics")}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
                   active === "Analytics"
                     ? "bg-[#F8961E] text-white shadow-md scale-[1.02]"
@@ -248,7 +248,7 @@ function Navbar({ isOpen, onClose }) {
             </li>
           </ul>
         </div>
-
+                  
         {/* ✅ Logout Button */}
         <div className="p-6 border-t border-gray-200 bg-white">
           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 border-2 border-[#F8961E] text-[#F8961E] bg-white font-semibold py-2.5 rounded-lg shadow-md transition-transform duration-150 hover:bg-[#F8961E] hover:text-white active:scale-95">

@@ -6,7 +6,10 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status, generics
 
+import json
 from django.contrib.auth.hashers import make_password, check_password
+from django.views.decorators.csrf import csrf_exempt
+from .models import Notification
 
 from .models import (
     Product, Category,
@@ -265,3 +268,22 @@ def order_items(request, order_id):
         })
 
     return Response(response_data)
+@csrf_exempt
+def notification_list(request):
+    if request.method == 'GET':
+        notifications = Notification.objects.all().values(
+            'id', 'product__name', 'notification_type', 'message', 
+            'days_until_stockout', 'is_read', 'created_at'
+        )
+        return JsonResponse(list(notifications), safe=False)
+
+@csrf_exempt
+def mark_notification_read(request, id):
+    if request.method == 'POST':
+        try:
+            notification = Notification.objects.get(id=id)
+            notification.is_read = True
+            notification.save()
+            return JsonResponse({'status': 'success'})
+        except Notification.DoesNotExist:
+            return JsonResponse({'error': 'Notification not found'}, status=404)

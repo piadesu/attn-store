@@ -14,6 +14,7 @@ import ProductList from "./pages/inventory_product_list";
 import EditProduct from "./pages/inventory_edit_product";
 import Signup from "./pages/signup";
 import "./App.css";
+import Analytics from "./pages/analytics";
 
 
 function Layout({ children, isSidebarOpen, setIsSidebarOpen }) {
@@ -148,6 +149,16 @@ useEffect(() => {
     <PrivateRoute>
       <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
         <EwalletHistory />
+      </Layout>
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/analytics"
+  element={
+    <PrivateRoute>
+      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+        <Analytics />
       </Layout>
     </PrivateRoute>
   }

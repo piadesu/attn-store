@@ -27,4 +27,13 @@ urlpatterns = [
 
     path('create-order/', views.create_order),
     path('orders/<int:pk>/', views.update_order_status),
+    path('add-product/', views.add_product, name='add_product'),
+    path('products/', views.product_list, name='product_list'),
+   
+
+   path('notifications/', views.notification_list, name='notification_list'),
+   path('notifications/<int:id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    
+
+
 ]
