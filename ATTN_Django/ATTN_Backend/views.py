@@ -233,3 +233,35 @@ def update_order_status(request, pk):
         "status": order.status,
     })
 
+
+@api_view(["GET"])
+def order_items(request, order_id):
+    try:
+        order = OrderProducts.objects.get(order_id=order_id)
+    except OrderProducts.DoesNotExist:
+        return Response({"error": "Order not found"}, status=404)
+
+    items = OrderedItem.objects.filter(order=order)
+
+    response_data = []
+
+    for item in items:
+        # Since OrderedItem has NO product FK, match by product_name
+        try:
+            product_obj = Product.objects.get(name__iexact=item.product_name)
+            category = product_obj.category.name if product_obj.category else "N/A"
+            stock_status = product_obj.stock_status
+        except Product.DoesNotExist:
+            category = "N/A"
+            stock_status = False
+
+        response_data.append({
+            "product_name": item.product_name,
+            "category": category,
+            "qty": item.qty,
+            "selling_price": float(item.selling_price or 0),
+            "subtotal": float(item.subtotal or 0),
+            "stock_status": stock_status,
+        })
+
+    return Response(response_data)

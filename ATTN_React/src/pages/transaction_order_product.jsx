@@ -76,7 +76,7 @@ function OrderProduct() {
   };
 
   // -----------------------------
-  // UPDATE QUANTITY (Check stock)
+  // UPDATE QUANTITY
   // -----------------------------
   const updateQty = (index, type) => {
     const updated = [...orderItems];
@@ -105,7 +105,7 @@ function OrderProduct() {
   };
 
   // -----------------------------
-  // SUBMIT ORDER TO BACKEND
+  // SUBMIT ORDER (WITH N/A FOR PAID)
   // -----------------------------
   const submitOrder = (statusType) => {
     for (let item of orderItems) {
@@ -115,15 +115,27 @@ function OrderProduct() {
       }
     }
 
+    const isPaid = statusType === "Paid";
+
+    // ✔ Get today's date YYYY-MM-DD
+    const today = new Date().toISOString().split("T")[0];
+
     const orderPayload = {
       status: statusType,
-      cus_name: customerData.name || null,
-      contact_num: customerData.phone || null,
-      due_date: formatDate(customerData.dueDate),
+
+      cus_name: isPaid ? "N/A" : (customerData.name || null),
+      contact_num: isPaid ? "N/A" : (customerData.phone || null),
+
+      // ✔ SET TODAY'S DATE IF PAID  
+      due_date: isPaid
+        ? today                // ← payment completed date
+        : formatDate(customerData.dueDate),
+
       total_amt: orderItems.reduce(
         (sum, item) => sum + item.selling_price * item.qty,
         0
       ),
+
       items: orderItems.map((item) => ({
         product_id: item.id,
         product_name: item.name,
@@ -143,30 +155,25 @@ function OrderProduct() {
       .then(() => {
         alert(`Order marked as ${statusType}!`);
 
-        // 🔥 Auto-update stock in UI without refresh
         const updatedProducts = products.map((prod) => {
           const orderedItem = orderItems.find((item) => item.id === prod.id);
           if (!orderedItem) return prod;
 
-          const newStock = prod.stock - orderedItem.qty;
-
           return {
             ...prod,
-            stock: newStock,
+            stock: prod.stock - orderedItem.qty,
             checked: false,
           };
         });
 
-        // 🔥 Keep out-of-stock visible but disabled
         setProducts(updatedProducts);
-
-        // Reset UI
         setOrderItems([]);
         setCustomerData({ name: "", phone: "", dueDate: "" });
         setShowModal(false);
       })
       .catch(() => alert("Failed to save order."));
   };
+
 
   return (
     <div className="p-6 space-y-8">
@@ -267,19 +274,9 @@ function OrderProduct() {
                 </div>
 
                 <div className="flex justify-center">
-                  <button
-                    className="border px-2"
-                    onClick={() => updateQty(index, "dec")}
-                  >
-                    -
-                  </button>
+                  <button className="border px-2" onClick={() => updateQty(index, "dec")}>-</button>
                   <span className="mx-2">{p.qty}</span>
-                  <button
-                    className="border px-2"
-                    onClick={() => updateQty(index, "inc")}
-                  >
-                    +
-                  </button>
+                  <button className="border px-2" onClick={() => updateQty(index, "inc")}>+</button>
                 </div>
 
                 <div className="text-right font-medium">₱{subtotal}</div>
@@ -289,11 +286,7 @@ function OrderProduct() {
         </div>
 
         <div className="text-right mt-3 font-bold text-lg text-[#4D1C0A]">
-          Total: ₱
-          {orderItems.reduce(
-            (sum, p) => sum + p.selling_price * p.qty,
-            0
-          )}
+          Total: ₱{orderItems.reduce((sum, p) => sum + p.selling_price * p.qty, 0)}
         </div>
 
         <div className="flex gap-3 justify-end mt-4">
