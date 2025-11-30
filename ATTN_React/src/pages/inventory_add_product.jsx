@@ -336,7 +336,7 @@ function AddProduct() {
               focus:outline-none
               focus:ring-2 focus:ring-[#F8961E]/50
               focus:border-[#F8961E]
-              transition-all" />
+              transition-all" required />
               </div>
 
               <div>
@@ -414,7 +414,7 @@ function AddProduct() {
                   focus:border-[#F8961E]
                   transition-all
                   appearance-none
-                  cursor-pointer" />
+                  cursor-pointer" required />
                 </div>
               </div>
 
@@ -431,7 +431,7 @@ function AddProduct() {
                   focus:border-[#F8961E]
                   transition-all
                   appearance-none
-                  cursor-pointer" />
+                  cursor-pointer" required />
                 </div>
               </div>
             </div>

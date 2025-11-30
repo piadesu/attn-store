@@ -18,6 +18,7 @@ function OrderProduct() {
     dueDate: "",
   });
   const [showModal, setShowModal] = useState(false);
+  const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
 
   // -----------------------------
   // FETCH PRODUCTS FROM DJANGO API
@@ -153,7 +154,8 @@ function OrderProduct() {
     })
       .then((res) => res.json())
       .then(() => {
-        alert(`Order marked as ${statusType}!`);
+        setNotification({ show: true, message: `Order marked as ${statusType}!`, type: "success" });
+        setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
 
         const updatedProducts = products.map((prod) => {
           const orderedItem = orderItems.find((item) => item.id === prod.id);
@@ -171,19 +173,31 @@ function OrderProduct() {
         setCustomerData({ name: "", phone: "", dueDate: "" });
         setShowModal(false);
       })
-      .catch(() => alert("Failed to save order."));
+      .catch(() => {
+        setNotification({ show: true, message: "Failed to save order.", type: "error" });
+        setTimeout(() => setNotification({ show: false, message: "", type: "error" }), 3000);
+      });
   };
 
 
   return (
     <div className="p-6 space-y-8">
+      {notification.show && (
+        <div className="toast toast-top toast-end z-50">
+          <div className={`alert ${notification.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg`}>
+            <div>
+              <span className="font-semibold">{notification.message}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PRODUCT LIST */}
       <div className="bg-white p-6 rounded-xl border border-[#D9D9D9] shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-[#4D1C0A]">Product List</h1>
 
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 px-3 py-1.5 rounded-md">
+          <div className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md">
             <Search className="w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -194,13 +208,13 @@ function OrderProduct() {
         </div>
 
         <div className="max-h-[300px] overflow-y-auto border rounded-lg">
-          <table className="w-full text-sm text-[#4D1C0A]">
-            <thead className="bg-gray-50 border-b sticky top-0 z-10">
+          <table className="w-full text-md text-[#4D1C0A]">
+            <thead className="bg-gray-50 top-0 z-10">
               <tr>
-                <th className="py-2 px-3 text-center">Select</th>
-                <th className="py-2 px-3 text-center">Product</th>
-                <th className="py-2 px-3 text-center">Category</th>
-                <th className="py-2 px-3 text-center">Price</th>
+                <th className="py-2 px-3 text-left"></th>
+                <th className="py-2 px-3 text-left">Product</th>
+                <th className="py-2 px-3 text-left">Category</th>
+                <th className="py-2 px-3 text-left">Price</th>
               </tr>
             </thead>
 
@@ -208,11 +222,11 @@ function OrderProduct() {
               {products.map((p, index) => (
                 <tr
                   key={p.id}
-                  className={`border-b ${
+                  className={` ${
                     p.stock === 0 ? "bg-red-50 text-gray-400" : "hover:bg-gray-50"
                   }`}
                 >
-                  <td className="py-2 px-3 text-center">
+                  <td className="py-2 px-3 text-left">
                     <input
                       type="checkbox"
                       disabled={p.stock === 0}
@@ -221,7 +235,7 @@ function OrderProduct() {
                     />
                   </td>
 
-                  <td className="py-2 px-3 text-center">
+                  <td className="py-2 px-3 text-left font-medium">
                     {p.name}
                     {p.stock === 0 && (
                       <span className="text-red-500 font-semibold ml-2">
@@ -230,8 +244,8 @@ function OrderProduct() {
                     )}
                   </td>
 
-                  <td className="py-2 px-3 text-center">{p.category}</td>
-                  <td className="py-2 px-3 text-center">₱{p.selling_price}</td>
+                  <td className="py-2 px-3 text-left">{p.category}</td>
+                  <td className="py-2 px-3 text-left">₱{p.selling_price}</td>
                 </tr>
               ))}
             </tbody>
@@ -241,7 +255,7 @@ function OrderProduct() {
         <div className="flex justify-end mt-4">
           <button
             onClick={handleAddSelectedToOrder}
-            className="bg-[#F28C28] hover:bg-[#e07a1e] text-white px-4 py-2 rounded-lg shadow-sm"
+            className="bg-[#F28C28] hover:bg-[#e07a1e] text-white px-4 py-2 rounded-lg shadow-sm font-bold"
           >
             + Add Product
           </button>
@@ -250,16 +264,16 @@ function OrderProduct() {
 
       {/* ORDER DETAILS */}
       <div className="bg-white p-6 rounded-xl border border-[#A29E9E] shadow-sm">
-        <h1 className="text-xl font-bold text-[#4D1C0A] mb-4">Order Details</h1>
+        <h1 className="text-xl font-bold text-[#4D1C0A] mb-4 pb-4 border-b border-[#4D1C0A]">Order Details</h1>
 
-        <div className="border rounded-lg">
+        <div className="rounded-lg">
           {orderItems.map((p, index) => {
             const subtotal = p.selling_price * p.qty;
 
             return (
               <div
                 key={index}
-                className="grid grid-cols-3 items-center border-b px-4 py-3 text-gray-800"
+                className="grid grid-cols-3 items-center px-4 py-3 text-gray-800"
               >
                 <div className="flex items-center gap-3">
                   <button
@@ -274,9 +288,9 @@ function OrderProduct() {
                 </div>
 
                 <div className="flex justify-center">
-                  <button className="border px-2" onClick={() => updateQty(index, "dec")}>-</button>
+                  <button className="border px-2 mr-2 rounded-lg" onClick={() => updateQty(index, "dec")}>-</button>
                   <span className="mx-2">{p.qty}</span>
-                  <button className="border px-2" onClick={() => updateQty(index, "inc")}>+</button>
+                  <button className="border px-2 ml-2 rounded-lg" onClick={() => updateQty(index, "inc")}>+</button>
                 </div>
 
                 <div className="text-right font-medium">₱{subtotal}</div>
@@ -299,7 +313,7 @@ function OrderProduct() {
 
           <button
             onClick={() => submitOrder("Paid")}
-            className="bg-[#F28C28] text-white px-5 py-2 rounded-lg"
+            className="bg-[#F28C28] text-white px-5 py-2 rounded-lg font-bold"
           >
             Paid
           </button>

@@ -183,6 +183,7 @@ function ProductList() {
 
           {/* Search Section */}
           <div className="w-full max-w-sm">
+            <Search className="absolute w-5 h-5 mt-2 ml-3 text-gray-400" />
             <input
               type="text"
               placeholder="Search"
@@ -215,15 +216,16 @@ function ProductList() {
 
 
         {/* table */}
-        <table className="w-full border-collpase">
+        <div className="overflow-y-auto max-h-[520px] mt-4 rounded-lg bg-white shadow-inner">
+        <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-t border-gray-400 text-left text-gray-500">
-              <th className="p-3">Products</th>
-              <th className="p-3">Category</th>
-              <th className="p-3">Cost Price</th>
-              <th className="p-3">Selling Price</th>
-              <th className="p-3">Stock Status</th>
-              <th className="p-3 pl-10">Actions</th>
+            <tr className="text-left bg-gray-50 text-gray-600">
+              <th className="text-sm p-3">Products</th>
+              <th className="text-sm p-3">Category</th>
+              <th className="text-sm p-3">Cost Price</th>
+              <th className="text-sm p-3">Selling Price</th>
+              <th className="text-sm p-3">Stock Status</th>
+              <th className="text-sm p-3 pl-10">Actions</th>
             </tr>
           </thead>
 
@@ -238,7 +240,7 @@ function ProductList() {
               filteredProducts.map((prod) => (
                 <tr key={prod.id} className={`${prod.stock <= 10 ? "bg-red-100 text-red-700" : ""}`}>
                   <td className="p-3 text-gray-700 font-medium">{prod.display_name || prod.name}</td>
-                  <td className="p-3 text-gray-500">{prod.category?.name || 'N/A'}</td>
+                  <td className="p-3 text-gray-500 ">{prod.category?.name || 'N/A'}</td>
                   <td className="p-3 text-gray-500">₱ {prod.cost_price}</td>
                   <td className="p-3 text-gray-500">₱ {prod.selling_price}</td>
                   <td className="p-3 text-gray-500">
@@ -269,6 +271,7 @@ function ProductList() {
 
 
 
+      </div>
       </div>
     </div>
 

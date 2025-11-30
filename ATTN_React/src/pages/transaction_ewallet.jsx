@@ -7,6 +7,7 @@ function Ewallet() {
   const [ewalNum, setEwalNum] = useState("");
   const [ewallAmount, setEwallAmount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
 
   // Fee calculation
   const calculateFee = (amount) => {
@@ -62,16 +63,18 @@ const handleSubmit = async (e) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => null);
       console.error("Error:", errorData);
-      alert("Failed to submit. Check console for details.");
+      setNotification({ show: true, message: "Failed to submit. Check console for details.", type: "error" });
+      setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
       setLoading(false);
       return;
     }
 
     const data = await response.json();
     console.log("Success:", data);
-    alert("E-wallet entry submitted successfully!");
+    setNotification({ show: true, message: "E-wallet entry submitted successfully!", type: "success" });
+    setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
 
     // Reset form
     setEwallApp("");
@@ -82,7 +85,8 @@ const handleSubmit = async (e) => {
 
   } catch (error) {
     console.error("Error submitting:", error);
-    alert("Something went wrong. Check console for details.");
+    setNotification({ show: true, message: "Something went wrong. Check console for details.", type: "error" });
+    setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
   } finally {
     setLoading(false);
   }
@@ -93,19 +97,19 @@ const handleSubmit = async (e) => {
     <div className="p-6">
       <h1 className="text-2xl font-bold text-[#4D1C0A] mb-6">E-wallet Transaction</h1>
 
-      <div className="border rounded-lg p-6 max-w-3xl mx-auto bg-white shadow-sm">
-        <div className="border-b pb-2 mb-4">
-          <h2 className="text-lg font-semibold">E-Wallet Details</h2>
+      <div className="border rounded-lg p-6 bg-white shadow-sm">
+        <div className="border-b pb-2 mb-4 border-[#4D1C0A]">
+          <h2 className="text-lg font-semibold text-[#4D1C0A] ">E-Wallet Details</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* E-Wallet App Dropdown */}
           <div>
-            <label className="block mb-1 font-semibold">E-Wallet App</label>
+            <label className="block mb-1 font-semibold text-gray-700">E-Wallet Type</label>
             <select
               value={ewallApp}
               onChange={(e) => setEwallApp(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2"
+              className="w-full border border-gray-300 rounded-lg p-2 text-gray-800"
               required
             >
               <option value="">Select App</option>
@@ -116,11 +120,11 @@ const handleSubmit = async (e) => {
 
           {/* Type Dropdown */}
           <div>
-            <label className="block mb-1 font-semibold">Type</label>
+            <label className="block mb-1 font-semibold text-gray-700">Type of Transaction</label>
             <select
               value={ewallType}
               onChange={(e) => setEwallType(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2"
+              className="w-full border border-gray-300 rounded-lg p-2 text-gray-800"
               required
             >
               <option value="">Select Type</option>
@@ -131,24 +135,25 @@ const handleSubmit = async (e) => {
 
           {/* Account Name */}
           <div>
-            <label className="block mb-1 font-semibold">Account Name</label>
+            <label className="block mb-1 font-semibold text-gray-700">Account Name</label>
             <input
               type="text"
               value={ewallAccName}
               onChange={(e) => setEwallAccName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2"
+              placeholder="Enter account name"
+              className="w-full border border-gray-300 rounded-lg p-2 text-gray-800"
               required
             />
           </div>
 
           {/* Mobile Number */}
           <div>
-            <label className="block mb-1 font-semibold">Mobile Number</label>
+            <label className="block mb-1 font-semibold text-gray-700">Mobile Number</label>
             <input
               type="text"
               value={ewalNum}
               onChange={(e) => setEwalNum(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2"
+              className="w-full border border-gray-300 rounded-lg p-2 text-gray-800"
               placeholder="e.g., 09123456789"
               required
             />
@@ -156,14 +161,14 @@ const handleSubmit = async (e) => {
 
           {/* Amount */}
           <div>
-            <label className="block mb-1 font-semibold">Amount</label>
+            <label className="block mb-1 font-semibold text-gray-700">Amount</label>
             <input
               type="number"
               value={ewallAmount}
               onChange={(e) =>
                 setEwallAmount(e.target.value === "" ? "" : Number(e.target.value))
               }
-              className="w-full border border-gray-300 rounded-lg p-2"
+              className="w-full border border-gray-300 rounded-lg p-2 text-gray-800"
               required
             />
           </div>

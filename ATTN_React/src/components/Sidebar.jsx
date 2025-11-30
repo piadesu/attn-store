@@ -154,9 +154,9 @@ function Navbar({ isOpen, onClose }) {
                       onClick={() =>
                         handleItemClick("E-Wallet Transaction History","/transaction_ewallet_history")
                       }
-                      className="hover:text-[#F8961E]"
+                      className="hover:text-[#F8961E] text-left"
                     >
-                      E-Wallet Transaction History
+                      E-Wallet Transaction List
                     </button>
                   </li>
                 </ul>
