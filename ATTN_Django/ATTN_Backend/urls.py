@@ -1,14 +1,27 @@
 from django.urls import path
-from . import views
+from . import views   # CORRECT IMPORT
 
 urlpatterns = [
+    path('add-product/', views.add_product),
+    path('products/', views.product_list),
+    path('products/<int:pk>/', views.product_detail),
+
+    path('categories/', views.CategoryListCreateView.as_view()),
+    path('categories/<int:pk>/', views.CategoryListCreateView.as_view()),
+
+    path('add-ewallet/', views.add_ewallet),
+    path('ewallets/', views.ewallet_list),
+
+    path('account/', views.signup),
+    path('login/', views.login_account),
+
+    path('orders/', views.order_list),
+    path('create-order/', views.create_order),
+    path('orders/<int:pk>/', views.update_order_status),
     path('add-product/', views.add_product, name='add_product'),
     path('products/', views.product_list, name='product_list'),
-    path('orders/', views.order_list, name='order_list'),
-    path('create-order/', views.create_order, name='create_order'),
-    path('transactions/', views.get_transactions, name='transactions'),
-    path('transactions/create/', views.create_transaction, name='create_transaction'),
-    path("transactions/update/<int:trans_id>/", views.update_transaction_status),
+   
+    
 
 
 ]

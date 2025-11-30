@@ -2,55 +2,48 @@ import { useEffect, useState } from "react";
 import { Search, ChevronDown } from "lucide-react";
 
 function TransactionList() {
-  const [transactions, setTransactions] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
 
-
-  const handleStatusChange = (transId, newStatus) => {
-  fetch(`http://127.0.0.1:8000/api/transactions/update/${transId}/`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status: newStatus }),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      console.log("Status updated:", data);
-
-      // Update UI immediately
-      setTransactions((prev) =>
-        prev.map((t) =>
-          t.trans_id === transId ? { ...t, status: newStatus } : t
-        )
-      );
+  const handleStatusChange = (orderId, newStatus) => {
+    fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
     })
-    .catch((err) => console.error("Error updating status:", err));
-};
-
-
-  // Fetch transactions from Django API
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/transactions/")
       .then((res) => res.json())
       .then((data) => {
-        console.log("Fetched Transactions:", data);
-        setTransactions(data);
+        console.log("Status updated:", data);
+
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.order_id === orderId ? { ...o, status: newStatus } : o
+          )
+        );
+      });
+  };
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/orders/")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched Orders:", data);
+        setOrders(data);
       })
-      .catch((err) => console.error("Error fetching transactions:", err));
+      .catch((err) => console.error("Error fetching orders:", err));
   }, []);
 
-  // Filter by search & status
-  const filteredTransactions = transactions.filter((t) => {
+  const filteredOrders = orders.filter((o) => {
     const matchesSearch =
-      t.cus_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.order?.toString().includes(searchTerm) ||
-      t.trans_id?.toString().includes(searchTerm);
+      o.cus_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.order_id?.toString().includes(searchTerm);
 
     const matchesStatus =
       selectedStatus === "" || selectedStatus === "All"
         ? true
-        : t.status === selectedStatus;
+        : o.status === selectedStatus;
 
     return matchesSearch && matchesStatus;
   });
@@ -62,14 +55,11 @@ function TransactionList() {
       </h1>
 
       <div className="border rounded-xl p-6 shadow-sm bg-white">
-        {/* Header */}
         <div className="border-b pb-2 border-gray-700 mb-4">
-          <h2 className="font-bold text-[#4D1C0A]">Transactions</h2>
+          <h2 className="font-bold text-[#4D1C0A]">Orders</h2>
         </div>
 
-        {/* Search + Status */}
         <div className="flex items-center justify-between mb-2">
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -81,7 +71,6 @@ function TransactionList() {
             />
           </div>
 
-          {/* Status Dropdown */}
           <div className="dropdown dropdown-end">
             <label
               tabIndex={0}
@@ -108,57 +97,55 @@ function TransactionList() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto mt-4">
           <table className="table table-sm w-full">
             <thead>
-              <tr className="border-b border-t border-gray-700">
-                <th className="text-gray-800">Transaction ID</th>
-                <th className="text-gray-800">Order ID</th>
-                <th className="text-gray-800">Status</th>
-                <th className="text-gray-800">Customer</th>
-                <th className="text-gray-800">Contact Number</th>
-                <th className="text-gray-800">Total Amount</th>
-                <th className="text-gray-800">Due Date</th>
-                 <th className="text-gray-800">Transaction Date</th>
+              <tr className="border-b border-t border-gray-700">  
+                <th className="text-gray-700">Order ID</th>
+                <th className="text-gray-700">Status</th>
+                <th className="text-gray-700">Customer</th>
+                <th className="text-gray-700">Contact Number</th>
+                <th className="text-gray-700">Total Amount</th>
+                <th className="text-gray-700">Due Date</th>
+                <th className="text-gray-700">Order Date</th>
               </tr>
             </thead>
 
-           <tbody>
-            {filteredTransactions.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="text-center text-gray-400">
-                  No transactions found.
-                </td>
-              </tr>
-            ) : (
-              filteredTransactions.map((t) => (
-                <tr key={t.trans_id}>
-                  <td className="text-gray-800">{t.trans_id}</td>
-                  <td className="text-gray-800">{t.order}</td>
-
-                  {/* STATUS DROPDOWN */}
-                  <td>
-                    <select
-                      className="border rounded px-2 py-1 text-gray-800"
-                      value={t.status}
-                      onChange={(e) => handleStatusChange(t.trans_id, e.target.value)}
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Paid">Paid</option>
-                    </select>
+            <tbody>
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center text-gray-400">
+                    No orders found.
                   </td>
-
-                  <td className="text-gray-800">{t.cus_name}</td>
-                  <td className="text-gray-800">{t.contact_num}</td>
-                  <td className="text-gray-800">₱{t.total_amt}</td>
-                  <td className="text-gray-800">{t.due_date}</td>
-                  <td className="text-gray-800">{t.transaction_date}</td>
                 </tr>
-              ))
-            )}
-          </tbody>
+              ) : (
+                filteredOrders.map((o) => (
+                  <tr key={o.order_id}>
+                    <td className="text-gray-700">{o.order_id}</td>
 
+                    <td>
+                      <select
+                        className="border rounded px-2 py-1 text-gray-800"
+                        value={o.status}
+                        onChange={(e) =>
+                          handleStatusChange(o.order_id, e.target.value)
+                        }
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Paid">Paid</option>
+                      </select>
+                    </td>
+
+                    <td className="text-gray-700">{o.cus_name}</td>
+                    <td className="text-gray-700">{o.contact_num}</td>
+                    <td className="text-gray-700">₱{o.total_amt}</td>
+                    <td className="text-gray-700">{o.due_date}</td>
+                    <td className="text-gray-700">{o.order_date}</td>
+                 
+                  </tr>
+                ))
+              )}
+            </tbody>
           </table>
         </div>
 

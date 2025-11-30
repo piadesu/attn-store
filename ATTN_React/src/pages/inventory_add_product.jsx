@@ -8,8 +8,98 @@ import { useState, useEffect } from "react";
 
 import { use } from "react";
 
-function ImageUpload() {
-  const [file, setFile] = useState(null);
+// Modal component for adding a new category
+function AddCategoryModal({ isOpen, onClose, onCategoryAdded }) {
+  const [categoryName, setCategoryName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!categoryName.trim()) {
+      setError("Category name is required");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/categories/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: categoryName }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Failed to add category");
+      }
+
+      const newCategory = await res.json();
+      onCategoryAdded(newCategory);
+      setCategoryName("");
+      onClose();
+    } catch (err) {
+      console.error("Error adding category:", err);
+      setError(err.message || "Error adding category");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-lg p-6 w-[90%] max-w-md">
+        <h2 className="text-lg font-bold text-[#4D1C0A] mb-4">Add New Category</h2>
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category Name
+            </label>
+            <input
+              type="text"
+              value={categoryName}
+              onChange={(e) => setCategoryName(e.target.value)}
+              placeholder="Enter category name"
+              className="w-full border rounded-lg p-2 border-gray-300 text-gray-800
+              focus:outline-none
+              focus:ring-2 focus:ring-[#F8961E]/50
+              focus:border-[#F8961E]
+              transition-all"
+            />
+          </div>
+
+          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border rounded-lg text-gray-500 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-[#F8961E] text-white rounded-lg hover:bg-[#f7a136] disabled:opacity-50"
+            >
+              {loading ? "Adding..." : "Add Category"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ImageUpload({ onFileSelect }) {
   const [preview, setPreview] = useState(null);
   const [dragActive, setDragActive] = useState(false);
 
@@ -23,7 +113,7 @@ function ImageUpload() {
       return;
     }
 
-    setFile(selectedFile);
+    onFileSelect(selectedFile);
     setPreview(URL.createObjectURL(selectedFile));
 
   };
@@ -41,7 +131,6 @@ function ImageUpload() {
   const handleChange = (e) => {
     const selectedFile = e.target.files[0];
     handleFile(selectedFile);
-
   };
 
   return (
@@ -83,17 +172,38 @@ function AddProduct() {
   const [product, setProduct] = useState({
     name: "",
     category: "",
-    stock:1,
-    price: "",
+    stock: 1,
+    cost_price: "",
+    selling_price: "",
     stock_status: true,
-    description: ""
+    is_active: true,
   });
 
+  const [categories, setCategories] = useState([]);
+  const [image, setImage] = useState(null);
+  const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/categories/")
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data);
+      })
+      .catch((err) => console.error("Error fetching categories:", err));
+  }, []);
 
   //handles field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProduct({ ...product, [name]: value });
+  };
+
+  // Handle new category added
+  const handleCategoryAdded = (newCategory) => {
+    setCategories([...categories, newCategory]);
+    setProduct({ ...product, category: newCategory.id || newCategory.name });
   };
 
   //handles quantity 
@@ -104,113 +214,179 @@ function AddProduct() {
     }));
   };
 
+  //handles quantity input change
+  const handleQuantityInput = (e) => {
+    let value = parseInt(e.target.value, 10);
+
+    if (isNaN(value) || value < 1) value = 1;
+
+    setProduct((prev) => ({
+      ...prev,
+      stock: value,
+    }));
+  }
+
   //handles form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Product added:", product);
 
+    const formData = new FormData();
+
+    //append product details to formData
+    Object.entries(product).forEach(([key, value]) => {
+      // Convert "category" key to "category_id" for the backend
+      if (key === 'category') {
+        formData.append('category_id', value);
+      } else {
+        formData.append(key, value);
+      }
+    });
+
+    //append image
+    if (image) {
+      formData.append("image", image);
+    }
+
 
     try {
       const res = await fetch("http://127.0.0.1:8000/api/add-product/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(product),
+        body: formData,
       });
 
-      if (!res.ok) throw new Error("Failed to add product");
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Error response data: ", errorData);
+        throw new Error("Failed to add product");
+      }
+
       const data = await res.json();
-      alert("Product added successfully!");
+      setNotification({ show: true, message: "Product added successfully!", type: "success" });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
+      console.log("Response data:", data);
+
+      //clear fields
       setProduct({
         name: "",
         category: "",
         stock: 1,
-        price: "",
+        cost_price: "",
+        selling_price: "",
         stock_status: true,
-        description: ""
+        is_active: true,
       });
-      console.log("Response data:", data);
+      setImage(null);
+
+
     } catch (err) {
       console.error("Error data: ", err);
-      alert("Error adding product.");
+      setNotification({ show: true, message: "Error adding product.", type: "error" });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
     }
   };
 
   return (
     <div>
+      {/* notif */}
+      {notification.show && (
+        <div className="toast toast-top toast-end z-50">
+          <div
+            className={`alert ${notification.type === "success"
+                ? "alert-success"
+                : "alert-error"
+              } shadow-lg`}
+          >
+            <div>
+              <span className="font-semibold">
+                {notification.message}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      <AddCategoryModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        onCategoryAdded={handleCategoryAdded}
+      />
+
       {/*first section */}
       <form onSubmit={handleSubmit} >
-      <div className="p-3">
-        <h1 className="text-2xl font-bold text-[#4D1C0A] mb-4">Add Product</h1>
-        
-          <div className="border rounded-xl p-6 shadow-sm bg-white">
-          <h2 className="font-bold mb-2 border-b-1 border-[#4D1C0A]-400 pb-2 text-[#4D1C0A]">
-            Product Description
-          </h2>
+        <div className="p-3">
+          <h1 className="text-2xl font-bold text-[#4D1C0A] mb-4">Add Product</h1>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Product Name
-              </label>
-              <input type="text" name="name" value={product.name} onChange={handleChange}
-                className="w-full border rounded-lg p-2 mt-1
+          <div className="border rounded-xl p-6 shadow-sm bg-white">
+            <h2 className="font-bold mb-2 border-b-1 border-[#4D1C0A]-400 pb-2 text-[#4D1C0A]">
+              Product Description
+            </h2>
+
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Product Name
+                </label>
+                <input type="text" name="name" placeholder="Enter product name" value={product.name} onChange={handleChange}
+                  className="w-full border rounded-lg p-2 mt-1
               border-gray-300 text-gray-800
               focus:outline-none
               focus:ring-2 focus:ring-[#F8961E]/50
               focus:border-[#F8961E]
               transition-all" />
-            </div>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Category</label>
-              <select name="category" value={product.category} onChange={handleChange}
-                className="w-full border rounded-lg p-2 mt-1 
-            border-gray-300 text-gray-800
-            focus:outline-none
-            focus:ring-2 focus:ring-[#F8961E]/50
-            focus:border-[#F8961E]
-            transition-all
-            cursor-pointer">
-                <option value="">Select category</option>
-                {/* --to be changed with category from DATABASE */}
-                <option value="Electronics">Electronics</option>
-                <option value="Clothing">Clothing</option>
-              </select>
-
-              <div className="absolute top-9 right-3 pointer-events-none">
-                <svg
-                  className="w-5 h-5 text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M19 9l-7 7-7-7" />
-                </svg>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Category</label>
+                <div className="flex gap-2 mt-1">
+                  <select name="category" value={product.category} onChange={handleChange}
+                    className="flex-1 border rounded-lg p-2
+              border-gray-300 text-gray-800
+              focus:outline-none
+              focus:ring-2 focus:ring-[#F8961E]/50
+              focus:border-[#F8961E]
+              transition-all
+              cursor-pointer">
+                    <option value="">Select category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id || cat.name} value={cat.id || cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModal(true)}
+                    className="px-3 py-2 bg-[#F8961E] text-white rounded-lg hover:bg-[#f7a136] transition font-semibold"
+                    title="Add new category"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Stock Quantity</label>
-              <div className="flex items-center border 
+            <div className="grid grid-cols-4 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Stock Quantity</label>
+                <div className="flex items-center border 
             rounded-lg mt-1 border-gray-300 p-1">
-                <button type="button" onClick={() => handleQuantityChange(-1)}
-                  className="px-3 py-1 border border-t-0 border-l-0 border-b-0 text-gray-300">-</button>
-                <input type="text" name="stock" value={product.stock} readOnly
-                  className="w-full text-center border-none text-gray-400" />
-                <button type="button" onClick={() => handleQuantityChange(1)}
-                  className="px-3 py-1 border border-t-0 border-r-0 border-b-0 text-gray-300">+</button>
+                  <button type="button" onClick={() => handleQuantityChange(-1)}
+                    className="px-3 py-1 border border-t-0 border-l-0 border-b-0 text-gray-300">-</button>
+                  <input type="text" name="stock" value={product.stock} onChange={handleQuantityInput}
+                    className="w-full text-center border-none  text-gray-400" />
+                  <button type="button" onClick={() => handleQuantityChange(1)}
+                    className="px-3 py-1 border border-t-0 border-r-0 border-b-0 text-gray-300">+</button>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Availability Status</label>
-              <select name="stock_status" value={product.status} onChange={handleChange}
-                className="w-full border border-gray-300 
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Availability Status</label>
+                <select name="stock_status" value={product.status} onChange={handleChange}
+                  className="w-full border border-gray-300 
             rounded-lg p-2 mt-1 text-gray-700
             focus:outline-none
             focus:ring-2 focus:ring-[#F8961E]/50
@@ -218,63 +394,61 @@ function AddProduct() {
             transition-all
             cursor-pointer">
 
-                <option value="">Select Status</option>
-                <option value={true}>In stock</option>
-                <option value={false}>Out of stock</option>
-              </select>
-              <div className="absolute top-9 right-3 pointer-events-none">
-                <svg
-                  className="w-5 h-5 text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M19 9l-7 7-7-7" />
-                </svg>
+                  <option value="">Select Status</option>
+                  <option value={true}>In stock</option>
+                  <option value={false}>Out of stock</option>
+                </select>
+
               </div>
 
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Cost Price</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₱</span>
+                  <input type="text" name="cost_price" value={product.cost_price} onChange={handleChange} placeholder="0.00"
+                    className="w-full border border-gray-300 
+                  rounded-lg p-2 pl-6 mt-1 text-gray-800
+                  bg-white
+                  focus:outline-none
+                  focus:ring-2 focus:ring-[#F8961E]/50
+                  focus:border-[#F8961E]
+                  transition-all
+                  appearance-none
+                  cursor-pointer" />
+                </div>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Price</label>
-              <input type="text" name="price" value={product.price} onChange={handleChange} placeholder="Php 0.00"
-                className="w-full border border-gray-300 
-            rounded-lg p-2 mt-1 text-gray-800
-            bg-white
-            focus:outline-none
-            focus:ring-2 focus:ring-[#F8961E]/50
-            focus:border-[#F8961E]
-            transition-all
-            appearance-none
-            cursor-pointer" />
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Selling Price</label>
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500">₱</span>
+                <input type="text" name="selling_price" value={product.selling_price} onChange={handleChange} placeholder="0.00"
+                  className="w-full border border-gray-300 
+                  rounded-lg p-2 pl-6 mt-1 text-gray-800
+                  bg-white
+                  focus:outline-none
+                  focus:ring-2 focus:ring-[#F8961E]/50
+                  focus:border-[#F8961E]
+                  transition-all
+                  appearance-none
+                  cursor-pointer" />
+                </div>
+              </div>
             </div>
           </div>
-          </div>
 
-        
-      </div>
 
-      {/* second section */}
-      {/* <div className="p-3">
-      <form onSubmit={{handleSubmit}}
-      className="border rounded-xl p-6 shadow-sm bg-white">
-        <h2 className="font-bold mb-2 border-b-1 border-[#4D1C0A]-400 pb-2 text-[#4D1C0A]">Product Images</h2>
-        <div className="border border-3 border-gray-300 border-dashed mt-4 p-30 rounded-lg">
-          <h2 className="text-blue-300">upload images</h2>
         </div>
-      </form>
 
-
-    </div> */}
-
-      <div className="p-3">
-
-        <ImageUpload />
-      </div>
-      <div className="flex justify-end">
-        <button type="submit" className="mt-6 bg-[#F8961E] font-bold text-white px-6 py-2 rounded-lg hover:bg-[#f7a136]">Add Product</button>
-      </div>
+        <div className="p-3">
+          <ImageUpload
+            key={image ? "has-image" : "no-image"}
+            onFileSelect={(file) => setImage(file)}
+          />
+        </div>
+        <div className="flex justify-end">
+          <button type="submit" className="mt-6 bg-[#F8961E] font-bold text-white px-6 py-2 rounded-lg hover:bg-[#f7a136]">Publish Product</button>
+        </div>
       </form>
 
 

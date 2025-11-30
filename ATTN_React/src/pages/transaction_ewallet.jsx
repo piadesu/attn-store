@@ -1,8 +1,191 @@
+import { useState } from "react";
+
 function Ewallet() {
+  const [ewallApp, setEwallApp] = useState("");
+  const [ewallType, setEwallType] = useState("");
+  const [ewallAccName, setEwallAccName] = useState("");
+  const [ewalNum, setEwalNum] = useState("");
+  const [ewallAmount, setEwallAmount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Fee calculation
+  const calculateFee = (amount) => {
+    if (amount >= 1 && amount <= 500) return 10;
+    if (amount >= 501 && amount <= 1000) return 20;
+    if (amount >= 1001 && amount <= 1500) return 30;
+    if (amount >= 1501 && amount <= 2000) return 40;
+    if (amount >= 2001 && amount <= 2500) return 50;
+    if (amount >= 2501 && amount <= 3000) return 60;
+    if (amount >= 3001 && amount <= 3500) return 70;
+    if (amount >= 3501 && amount <= 4000) return 80;
+    if (amount >= 4001 && amount <= 4500) return 90;
+    if (amount >= 4501 && amount <= 5000) return 100;
+    if (amount >= 5001 && amount <= 5500) return 110;
+    if (amount >= 5501 && amount <= 6000) return 120;
+    if (amount >= 6001 && amount <= 6500) return 130;
+    if (amount >= 6501 && amount <= 7000) return 140;
+    if (amount >= 7001 && amount <= 7500) return 150;
+    if (amount >= 7501 && amount <= 8000) return 160;
+    if (amount >= 8001 && amount <= 8500) return 170;
+    if (amount >= 8501 && amount <= 9000) return 180;
+    if (amount >= 9001 && amount <= 9500) return 190;
+    if (amount >= 9501 && amount <= 10000) return 200;
+    if (amount >= 10001 && amount <= 10500) return 210;
+    return 0;
+  };
+
+  const fee = calculateFee(ewallAmount);
+  const total = parseFloat(ewallAmount) + fee;
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+
+  const payload = {
+    EWALL_APP: ewallApp,
+    EWALL_TYPE: ewallType,
+    EWALL_ACC_NAME: ewallAccName,
+    EWAL_NUM: ewalNum,
+    EWALL_AMOUNT: ewallAmount,
+    EWALL_FEE: fee,       // <-- add fee here
+    EWALL_TOTAL: total,   // <-- add total here
+    EWALL_DATE: new Date().toISOString().split('T')[0],
+  };
+
+  try {
+    const response = await fetch("http://127.0.0.1:8000/api/add-ewallet/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error:", errorData);
+      alert("Failed to submit. Check console for details.");
+      setLoading(false);
+      return;
+    }
+
+    const data = await response.json();
+    console.log("Success:", data);
+    alert("E-wallet entry submitted successfully!");
+
+    // Reset form
+    setEwallApp("");
+    setEwallType("");
+    setEwallAccName("");
+    setEwalNum("");
+    setEwallAmount(0);
+
+  } catch (error) {
+    console.error("Error submitting:", error);
+    alert("Something went wrong. Check console for details.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-[#4D1C0A] mb-4">E-Wallet</h1>
-      <p>This is your E-Wallet page.</p>
+      <h1 className="text-2xl font-bold text-[#4D1C0A] mb-6">E-wallet Transaction</h1>
+
+      <div className="border rounded-lg p-6 max-w-3xl mx-auto bg-white shadow-sm">
+        <div className="border-b pb-2 mb-4">
+          <h2 className="text-lg font-semibold">E-Wallet Details</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* E-Wallet App Dropdown */}
+          <div>
+            <label className="block mb-1 font-semibold">E-Wallet App</label>
+            <select
+              value={ewallApp}
+              onChange={(e) => setEwallApp(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2"
+              required
+            >
+              <option value="">Select App</option>
+              <option value="GCash">GCash</option>
+              <option value="Maya">Maya</option>
+            </select>
+          </div>
+
+          {/* Type Dropdown */}
+          <div>
+            <label className="block mb-1 font-semibold">Type</label>
+            <select
+              value={ewallType}
+              onChange={(e) => setEwallType(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2"
+              required
+            >
+              <option value="">Select Type</option>
+              <option value="Cash-In">Cash-In</option>
+              <option value="Cash-Out">Cash-Out</option>
+            </select>
+          </div>
+
+          {/* Account Name */}
+          <div>
+            <label className="block mb-1 font-semibold">Account Name</label>
+            <input
+              type="text"
+              value={ewallAccName}
+              onChange={(e) => setEwallAccName(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2"
+              required
+            />
+          </div>
+
+          {/* Mobile Number */}
+          <div>
+            <label className="block mb-1 font-semibold">Mobile Number</label>
+            <input
+              type="text"
+              value={ewalNum}
+              onChange={(e) => setEwalNum(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-2"
+              placeholder="e.g., 09123456789"
+              required
+            />
+          </div>
+
+          {/* Amount */}
+          <div>
+            <label className="block mb-1 font-semibold">Amount</label>
+            <input
+              type="number"
+              value={ewallAmount}
+              onChange={(e) =>
+                setEwallAmount(e.target.value === "" ? "" : Number(e.target.value))
+              }
+              className="w-full border border-gray-300 rounded-lg p-2"
+              required
+            />
+          </div>
+
+          {/* Fee & Total */}
+          <div className="md:col-span-2 text-gray-700">
+            <p>Fee: Php {fee.toFixed(2)}</p>
+            <p className="font-bold">Total: Php {total.toFixed(2)}</p>
+          </div>
+
+          {/* Submit Button */}
+          <div className="md:col-span-2 flex justify-end">
+            <button
+              type="submit"
+              className={`bg-[#F8961E] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#f7a136] transition ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+              disabled={loading}
+            >
+              {loading ? "Submitting..." : "Submit"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
