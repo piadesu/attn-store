@@ -58,7 +58,7 @@ export default function EditProduct() {
       })
       .catch((err) => {
         console.error("Error loading product:", err);
-        setError({ fetch: "Unable to load product. " });
+        // setError({ fetch: "Unable to load product. " });
       })
       .finally(() => setLoading(false));
 
@@ -89,14 +89,15 @@ export default function EditProduct() {
     //special handling for stock_status: convert string to boolean
     if (name === "stock_status") {
       const boolVal = value === "true" || value === true;
-      setProduct((p) => ({ ...p, stock_staus: boolVal }));
+      setProduct((p) => ({ ...p, stock_status: boolVal }));
       return;
     }
 
     //numeric conversion for stock
     if (name === "stock") {
       const num = parseInt(value || "0", 10);
-      setProduct((p) => ({ ...p, stock: Number.isNaN(num) ? 0 : num }));
+      const newStock = Number.isNaN(num) ? 0 : num;
+      setProduct((p) => ({ ...p, stock: newStock, stock_status: newStock > 0 ? true : p.stock_status }));
       return;
     }
 
@@ -104,10 +105,14 @@ export default function EditProduct() {
   };
 
   const changeStock = (amount) => {
-    setProduct((p) => ({
-      ...p,
-      stock: Math.max(0, (p.stock || 0) + amount)
-    }));
+    setProduct((p) => {
+      const newStock = Math.max(0, (p.stock || 0) + amount);
+      return {
+        ...p,
+        stock: newStock,
+        stock_status: newStock > 0 ? true : p.stock_status,
+      };
+    });
   };
 
   const handleFileInputChange = (e) => {

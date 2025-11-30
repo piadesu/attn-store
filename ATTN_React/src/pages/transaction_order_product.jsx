@@ -18,9 +18,11 @@ function OrderProduct() {
     dueDate: "",
   });
   const [showModal, setShowModal] = useState(false);
+  const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+  const [searchTerm, setSearchTerm] = useState(""); // 🔍 ADDED
 
   // -----------------------------
-  // FETCH PRODUCTS FROM DJANGO API
+  // FETCH PRODUCTS FROM API
   // -----------------------------
   useEffect(() => {
     fetch("http://localhost:8000/api/products/")
@@ -76,7 +78,7 @@ function OrderProduct() {
   };
 
   // -----------------------------
-  // UPDATE QUANTITY (Check stock)
+  // UPDATE QUANTITY
   // -----------------------------
   const updateQty = (index, type) => {
     const updated = [...orderItems];
@@ -105,7 +107,7 @@ function OrderProduct() {
   };
 
   // -----------------------------
-  // SUBMIT ORDER TO BACKEND
+  // SUBMIT ORDER (WITH N/A FOR PAID)
   // -----------------------------
   const submitOrder = (statusType) => {
     for (let item of orderItems) {
@@ -115,15 +117,20 @@ function OrderProduct() {
       }
     }
 
+    const isPaid = statusType === "Paid";
+    const today = new Date().toISOString().split("T")[0];
+
     const orderPayload = {
       status: statusType,
-      cus_name: customerData.name || null,
-      contact_num: customerData.phone || null,
-      due_date: formatDate(customerData.dueDate),
+      cus_name: isPaid ? "N/A" : customerData.name || null,
+      contact_num: isPaid ? "N/A" : customerData.phone || null,
+      due_date: isPaid ? today : formatDate(customerData.dueDate),
+
       total_amt: orderItems.reduce(
         (sum, item) => sum + item.selling_price * item.qty,
         0
       ),
+
       items: orderItems.map((item) => ({
         product_id: item.id,
         product_name: item.name,
@@ -141,92 +148,105 @@ function OrderProduct() {
     })
       .then((res) => res.json())
       .then(() => {
-        alert(`Order marked as ${statusType}!`);
+        setNotification({ show: true, message: `Order marked as ${statusType}!`, type: "success" });
+        setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
 
-        // 🔥 Auto-update stock in UI without refresh
         const updatedProducts = products.map((prod) => {
           const orderedItem = orderItems.find((item) => item.id === prod.id);
           if (!orderedItem) return prod;
 
-          const newStock = prod.stock - orderedItem.qty;
-
           return {
             ...prod,
-            stock: newStock,
+            stock: prod.stock - orderedItem.qty,
             checked: false,
           };
         });
 
-        // 🔥 Keep out-of-stock visible but disabled
         setProducts(updatedProducts);
-
-        // Reset UI
         setOrderItems([]);
         setCustomerData({ name: "", phone: "", dueDate: "" });
         setShowModal(false);
       })
-      .catch(() => alert("Failed to save order."));
+      .catch(() => {
+        setNotification({ show: true, message: "Failed to save order.", type: "error" });
+        setTimeout(() => setNotification({ show: false, message: "", type: "error" }), 3000);
+      });
   };
 
   return (
     <div className="p-6 space-y-8">
+
+      {/* TOAST */}
+      {notification.show && (
+        <div className="toast toast-top toast-end z-50">
+          <div className={`alert ${notification.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg`}>
+            <span className="font-semibold">{notification.message}</span>
+          </div>
+        </div>
+      )}
 
       {/* PRODUCT LIST */}
       <div className="bg-white p-6 rounded-xl border border-[#D9D9D9] shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-[#4D1C0A]">Product List</h1>
 
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-300 px-3 py-1.5 rounded-md">
+          {/* 🔍 SEARCH BAR */}
+          <div className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md">
             <Search className="w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search..."
               className="outline-none bg-transparent text-sm text-gray-700 placeholder-gray-400 w-40"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
         <div className="max-h-[300px] overflow-y-auto border rounded-lg">
-          <table className="w-full text-sm text-[#4D1C0A]">
-            <thead className="bg-gray-50 border-b sticky top-0 z-10">
+          <table className="w-full text-md text-[#4D1C0A]">
+            <thead className="bg-gray-50 top-0 z-10">
               <tr>
-                <th className="py-2 px-3 text-center">Select</th>
-                <th className="py-2 px-3 text-center">Product</th>
-                <th className="py-2 px-3 text-center">Category</th>
-                <th className="py-2 px-3 text-center">Price</th>
+                <th className="py-2 px-3 text-left"></th>
+                <th className="py-2 px-3 text-left">Product</th>
+                <th className="py-2 px-3 text-left">Category</th>
+                <th className="py-2 px-3 text-left">Price</th>
               </tr>
             </thead>
 
             <tbody>
-              {products.map((p, index) => (
-                <tr
-                  key={p.id}
-                  className={`border-b ${
-                    p.stock === 0 ? "bg-red-50 text-gray-400" : "hover:bg-gray-50"
-                  }`}
-                >
-                  <td className="py-2 px-3 text-center">
-                    <input
-                      type="checkbox"
-                      disabled={p.stock === 0}
-                      checked={p.checked}
-                      onChange={() => handleCheckboxChange(index)}
-                    />
-                  </td>
+              {products
+                .filter((p) =>
+                  p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  p.category.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((p, index) => (
+                  <tr
+                    key={p.id}
+                    className={`${p.stock === 0 ? "bg-red-50 text-gray-400" : "hover:bg-gray-50"}`}
+                  >
+                    <td className="py-2 px-3 text-left">
+                      <input
+                        type="checkbox"
+                        disabled={p.stock === 0}
+                        checked={p.checked}
+                        onChange={() => handleCheckboxChange(index)}
+                      />
+                    </td>
 
-                  <td className="py-2 px-3 text-center">
-                    {p.name}
-                    {p.stock === 0 && (
-                      <span className="text-red-500 font-semibold ml-2">
-                        (Out of Stock)
-                      </span>
-                    )}
-                  </td>
+                    <td className="py-2 px-3 text-left font-medium">
+                      {p.name}
+                      {p.stock === 0 && (
+                        <span className="text-red-500 font-semibold ml-2">
+                          (Out of Stock)
+                        </span>
+                      )}
+                    </td>
 
-                  <td className="py-2 px-3 text-center">{p.category}</td>
-                  <td className="py-2 px-3 text-center">₱{p.selling_price}</td>
-                </tr>
-              ))}
+                    <td className="py-2 px-3 text-left">{p.category}</td>
+                    <td className="py-2 px-3 text-left">₱{p.selling_price}</td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -234,7 +254,7 @@ function OrderProduct() {
         <div className="flex justify-end mt-4">
           <button
             onClick={handleAddSelectedToOrder}
-            className="bg-[#F28C28] hover:bg-[#e07a1e] text-white px-4 py-2 rounded-lg shadow-sm"
+            className="bg-[#F28C28] hover:bg-[#e07a1e] text-white px-4 py-2 rounded-lg shadow-sm font-bold"
           >
             + Add Product
           </button>
@@ -243,16 +263,18 @@ function OrderProduct() {
 
       {/* ORDER DETAILS */}
       <div className="bg-white p-6 rounded-xl border border-[#A29E9E] shadow-sm">
-        <h1 className="text-xl font-bold text-[#4D1C0A] mb-4">Order Details</h1>
+        <h1 className="text-xl font-bold text-[#4D1C0A] mb-4 pb-4 border-b border-[#4D1C0A]">
+          Order Details
+        </h1>
 
-        <div className="border rounded-lg">
+        <div className="rounded-lg">
           {orderItems.map((p, index) => {
             const subtotal = p.selling_price * p.qty;
 
             return (
               <div
                 key={index}
-                className="grid grid-cols-3 items-center border-b px-4 py-3 text-gray-800"
+                className="grid grid-cols-3 items-center px-4 py-3 text-gray-800"
               >
                 <div className="flex items-center gap-3">
                   <button
@@ -267,17 +289,11 @@ function OrderProduct() {
                 </div>
 
                 <div className="flex justify-center">
-                  <button
-                    className="border px-2"
-                    onClick={() => updateQty(index, "dec")}
-                  >
+                  <button className="border px-2 mr-2 rounded-lg" onClick={() => updateQty(index, "dec")}>
                     -
                   </button>
                   <span className="mx-2">{p.qty}</span>
-                  <button
-                    className="border px-2"
-                    onClick={() => updateQty(index, "inc")}
-                  >
+                  <button className="border px-2 ml-2 rounded-lg" onClick={() => updateQty(index, "inc")}>
                     +
                   </button>
                 </div>
@@ -289,11 +305,7 @@ function OrderProduct() {
         </div>
 
         <div className="text-right mt-3 font-bold text-lg text-[#4D1C0A]">
-          Total: ₱
-          {orderItems.reduce(
-            (sum, p) => sum + p.selling_price * p.qty,
-            0
-          )}
+          Total: ₱{orderItems.reduce((sum, p) => sum + p.selling_price * p.qty, 0)}
         </div>
 
         <div className="flex gap-3 justify-end mt-4">
@@ -306,14 +318,14 @@ function OrderProduct() {
 
           <button
             onClick={() => submitOrder("Paid")}
-            className="bg-[#F28C28] text-white px-5 py-2 rounded-lg"
+            className="bg-[#F28C28] text-white px-5 py-2 rounded-lg font-bold"
           >
             Paid
           </button>
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* CUSTOMER MODAL */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
           <div className="bg-white w-[600px] rounded-xl p-8 relative shadow-xl">
@@ -352,10 +364,7 @@ function OrderProduct() {
                   className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.phone}
                   onChange={(e) =>
-                    setCustomerData({
-                      ...customerData,
-                      phone: e.target.value,
-                    })
+                    setCustomerData({ ...customerData, phone: e.target.value })
                   }
                 />
               </div>
@@ -369,10 +378,7 @@ function OrderProduct() {
                   className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.dueDate}
                   onChange={(e) =>
-                    setCustomerData({
-                      ...customerData,
-                      dueDate: e.target.value,
-                    })
+                    setCustomerData({ ...customerData, dueDate: e.target.value })
                   }
                 />
               </div>

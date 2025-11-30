@@ -8,7 +8,10 @@ from rest_framework import status, generics
 from datetime import date, timedelta
 from django.db.models import Sum
 
+import json
 from django.contrib.auth.hashers import make_password, check_password
+from django.views.decorators.csrf import csrf_exempt
+from .models import Notification
 
 from .models import (
     Product, Category,
@@ -267,3 +270,54 @@ def update_order_status(request, pk):
         "status": order.status,
     })
 
+
+@api_view(["GET"])
+def order_items(request, order_id):
+    try:
+        order = OrderProducts.objects.get(order_id=order_id)
+    except OrderProducts.DoesNotExist:
+        return Response({"error": "Order not found"}, status=404)
+
+    items = OrderedItem.objects.filter(order=order)
+
+    response_data = []
+
+    for item in items:
+        # Since OrderedItem has NO product FK, match by product_name
+        try:
+            product_obj = Product.objects.get(name__iexact=item.product_name)
+            category = product_obj.category.name if product_obj.category else "N/A"
+            stock_status = product_obj.stock_status
+        except Product.DoesNotExist:
+            category = "N/A"
+            stock_status = False
+
+        response_data.append({
+            "product_name": item.product_name,
+            "category": category,
+            "qty": item.qty,
+            "selling_price": float(item.selling_price or 0),
+            "subtotal": float(item.subtotal or 0),
+            "stock_status": stock_status,
+        })
+
+    return Response(response_data)
+@csrf_exempt
+def notification_list(request):
+    if request.method == 'GET':
+        notifications = Notification.objects.all().values(
+            'id', 'product__name', 'notification_type', 'message', 
+            'days_until_stockout', 'is_read', 'created_at'
+        )
+        return JsonResponse(list(notifications), safe=False)
+
+@csrf_exempt
+def mark_notification_read(request, id):
+    if request.method == 'POST':
+        try:
+            notification = Notification.objects.get(id=id)
+            notification.is_read = True
+            notification.save()
+            return JsonResponse({'status': 'success'})
+        except Notification.DoesNotExist:
+            return JsonResponse({'error': 'Notification not found'}, status=404)

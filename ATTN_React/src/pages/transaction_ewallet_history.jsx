@@ -47,7 +47,7 @@ function EwalletHistory() {
 
   return (
     <div className="p-3">
-      <h1 className="text-2xl font-bold text-[#4D1C0A] mb-4">Ewallet Transaction History</h1>
+      <h1 className="text-2xl font-bold text-[#4D1C0A] mb-4">E-wallet Transaction List</h1>
 
       <div className="border rounded-xl p-6 shadow-sm bg-white">
         {/* Header */}
@@ -107,7 +107,7 @@ function EwalletHistory() {
               value={specificDate}
               onChange={(e) => setSpecificDate(e.target.value)}
               disabled={selectedFilter !== "Specific Date"}
-              className={`w-32 border rounded-lg py-1 px-1 text-center relative z-10 transition-all ${
+              className={`border rounded-lg py-1 px-1 text-center text-md relative z-10 transition-all ${
                 selectedFilter === "Specific Date"
                   ? "border-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#F8961E]/50 focus:border-[#F8961E] bg-white cursor-text"
                   : "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
@@ -118,11 +118,11 @@ function EwalletHistory() {
 
         {/* Table */}
         <div className="overflow-x-auto mt-4">
-          <table className="table table-sm w-full">
+          <table className="table table-md w-full">
             <thead>
-              <tr className="border-b border-t border-gray-200">
-                <th>ID</th>
-                <th>Ewallet</th>
+              <tr className="text-left bg-gray-50 border-b text-gray-700">
+                
+                <th>E-wallet</th>
                 <th>Type</th>
                 <th>Customer Name</th>
                 <th>Account Number</th>
@@ -142,8 +142,7 @@ function EwalletHistory() {
                 </tr>
               ) : (
                 filteredTransactions.map((t) => (
-                  <tr key={t.EWALL_ID}>
-                    <td>{t.EWALL_ID}</td>
+                  <tr key={t.EWALL_ID} className="text-gray-800">
                     <td>{t.EWALL_APP}</td>
                     <td>{t.EWALL_TYPE}</td>
                     <td>{t.EWALL_ACC_NAME}</td>
