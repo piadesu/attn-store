@@ -36,16 +36,20 @@ class AccountSerializer(serializers.ModelSerializer):
         model = Account
         fields = '__all__'
 
-
-class OrderedItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OrderedItem
-        fields = '__all__'
-
-
 class OrderProductsSerializer(serializers.ModelSerializer):
-    items = OrderedItemSerializer(many=True, read_only=True)
-
     class Meta:
         model = OrderProducts
         fields = '__all__'
+
+class OrderedItemSerializer(serializers.ModelSerializer):
+    order_date = serializers.DateField(source="order.order_date", read_only=True)
+
+    class Meta:
+        model = OrderedItem
+        fields = "__all__"  # includes product_name, qty, cost_price, selling_price
+        extra_fields = ["order_date"]
+
+
+
+
+

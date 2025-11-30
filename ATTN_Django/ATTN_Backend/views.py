@@ -5,6 +5,8 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status, generics
+from datetime import date, timedelta
+from django.db.models import Sum
 
 from django.contrib.auth.hashers import make_password, check_password
 
@@ -17,7 +19,7 @@ from .models import (
 from .serializers import (
     ProductSerializer, CategorySerializer,
     EwalletSerializer, AccountSerializer,
-    OrderProductsSerializer, OrderedItemSerializer
+    OrderProductsSerializer, OrderedItemSerializer, OrderedItemSerializer
 )
 
 # --------------------------
@@ -134,6 +136,38 @@ def create_order(request):
         )
 
     return Response(OrderProductsSerializer(order).data)
+
+@api_view(['GET'])
+def orderitem_list(request):
+    items = OrderedItem.objects.select_related("order").all()  # ✔ only valid FK
+    serializer = OrderedItemSerializer(items, many=True)
+    return Response(serializer.data)
+
+@api_view(["GET"])
+def analytics(request):
+    today = date.today()
+    week_ago = today - timedelta(days=6)
+    month_ago = today - timedelta(days=29)
+
+    # ---- DAILY SALES FOR PAST 7 DAYS ----
+    daily_sales = (
+        OrderProducts.objects.filter(order_date__gte=week_ago)
+        .values("order_date")
+        .annotate(total=Sum("total_amt"))
+        .order_by("order_date")
+    )
+
+    # ---- TOP 5 BEST SELLING PRODUCTS ----
+    top_products = (
+        OrderedItem.objects.values("product_name")
+        .annotate(total_qty=Sum("qty"))
+        .order_by("-total_qty")[:5]
+    )
+
+    return Response({
+        "daily_sales": list(daily_sales),
+        "top_products": list(top_products),
+    })
 
 
 
