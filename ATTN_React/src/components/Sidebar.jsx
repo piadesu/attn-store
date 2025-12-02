@@ -17,6 +17,9 @@ function Navbar({ isOpen, onClose }) {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
 
+    // Remove stored user info as well
+    localStorage.removeItem("user");
+
     // Redirect to login page
     navigate("/");
   };

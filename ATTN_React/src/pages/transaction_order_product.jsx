@@ -387,11 +387,19 @@ function OrderProduct() {
                 </label>
                 <input
                   type="text"
+                  maxLength={11}              // 🔥 LIMIT TO 11 DIGITS
+                  inputMode="numeric"         // 🔥 MOBILE NUMPAD
+                  pattern="[0-9]*"            // 🔥 NUMBERS ONLY
                   className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.phone}
-                  onChange={(e) =>
-                    setCustomerData({ ...customerData, phone: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    // 🔥 ALLOW ONLY NUMBERS
+                    if (/^[0-9]*$/.test(value)) {
+                      setCustomerData({ ...customerData, phone: value });
+                    }
+                  }}
                 />
               </div>
 
