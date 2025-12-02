@@ -37,7 +37,7 @@ function Layout({ children, isSidebarOpen, setIsSidebarOpen }) {
 
       {/* Topbar + Content */}
       <main className="flex-1 transition-all duration-300 lg:ml-72">
-        <div className="sticky top-0 bg-white shadow-sm">
+        <div className="sticky top-0 bg-white shadow-sm z-50">
           <Topbar onMenuClick={() => setIsSidebarOpen(true)} pageTitle={pageTitle} />
         </div>
 

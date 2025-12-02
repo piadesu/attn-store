@@ -205,7 +205,7 @@ function OrderProduct() {
 
         <div className="max-h-[300px] overflow-y-auto border rounded-lg">
           <table className="w-full text-md text-[#4D1C0A]">
-            <thead className="bg-gray-50 top-0 z-10">
+            <thead className="bg-gray-50 top-0 z-10 sticky">
               <tr>
                 <th className="py-2 px-3 text-left"></th>
                 <th className="py-2 px-3 text-left">Product</th>
@@ -262,7 +262,7 @@ function OrderProduct() {
       </div>
 
       {/* ORDER DETAILS */}
-      <div className="bg-white p-6 rounded-xl border border-[#A29E9E] shadow-sm">
+      <div className="bg-white p-6 rounded-xl border border-[#D9D9D9] shadow-sm">
         <h1 className="text-xl font-bold text-[#4D1C0A] mb-4 pb-4 border-b border-[#4D1C0A]">
           Order Details
         </h1>

@@ -111,23 +111,24 @@ export default function Dashboard() {
       {/* ====== ANALYTICS - DAILY SALES ====== */}
       <div>
         <h2 className="font-bold text-xl text-[#4D1C0A]">Statistics</h2>
-      <div className="bg-white border border-[#F8961E]/30 rounded-lg p-6 shadow-sm mt-6">
-        <h2 className="text-lg font-semibold text-gray-700 mb-2">
-          Daily Sales (Past 7 Days)
-        </h2>
+        <div className="bg-white border border-[#F8961E]/30 rounded-lg p-6 shadow-sm mt-6">
+          <h2 className="text-lg font-semibold text-gray-700 mb-2">
+            Daily Sales (Past 7 Days)
+          </h2>
 
-        <div className="w-full h-72">
-          <ResponsiveContainer>
-            <LineChart data={dailySales}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="order_date" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="total" stroke="#F8961E" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="w-full h-72 text-gray-700">
+            <ResponsiveContainer>
+              <LineChart data={dailySales}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="order_date" />
+
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="total" name="Total" stroke="#F8961E" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
       </div>
 
       {/* ====== ANALYTICS - TOP 5 PRODUCTS ====== */}
@@ -136,14 +137,21 @@ export default function Dashboard() {
           Top 5 Best-Selling Products
         </h2>
 
-        <div className="w-full h-72">
+        <div className="w-full h-72 text-gray-700">
           <ResponsiveContainer>
             <BarChart data={topProducts}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="product_name" />
+
+              <Tooltip
+                formatter={(value, name) =>
+                  name === "total_qty" ? [value, "Total Quantity"] : [value, name]
+                }
+              />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="total_qty" fill="#F8961E" />
+
+              <Bar dataKey="total_qty" fill="#F8961E" name="Total Quantity" />
             </BarChart>
           </ResponsiveContainer>
         </div>

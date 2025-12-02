@@ -100,32 +100,32 @@ function TransactionList() {
 
           {/* Status Dropdown */}
           <div className="flex items-center gap-2">
-          <div className="dropdown dropdown-end">
-            <label
-              tabIndex={0}
-              className="px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm cursor-pointer shadow-sm flex items-center gap-2"
-            >
-              {selectedStatus || "All Status"}
-              <ChevronDown className="w-4 h-4 ml-1" />
-            </label>
+            <div className="dropdown dropdown-end">
+              <label
+                tabIndex={0}
+                className="px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm cursor-pointer shadow-sm flex items-center gap-2"
+              >
+                {selectedStatus || "All Status"}
+                <ChevronDown className="w-4 h-4 ml-1" />
+              </label>
 
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu p-2 shadow-lg bg-white rounded-lg w-36 mt-2 border border-gray-200 text-gray-500"
-            >
-              <li><a onClick={() => setSelectedStatus("All")}>All</a></li>
-              <li><a onClick={() => setSelectedStatus("Paid")}>Paid</a></li>
-              <li><a onClick={() => setSelectedStatus("Pending")}>Pending</a></li>
-            </ul>
+              <ul
+                tabIndex={0}
+                className="dropdown-content menu p-2 shadow-lg bg-white rounded-lg w-36 mt-2 border border-gray-200 text-gray-500"
+              >
+                <li><a onClick={() => setSelectedStatus("All")}>All</a></li>
+                <li><a onClick={() => setSelectedStatus("Paid")}>Paid</a></li>
+                <li><a onClick={() => setSelectedStatus("Pending")}>Pending</a></li>
+              </ul>
             </div>
           </div>
         </div>
 
         {/* Scrollable Table */}
-        <div className="overflow-y-auto max-h-[520px] mt-4 rounded-lg bg-white shadow-inner">
+        <div className="overflow-y-auto max-h-[520px] overflow-y-auto mt-4 rounded-lg bg-white shadow-inner">
           <table className="w-full min-w-[800px] table-auto">
             <thead>
-              <tr className="text-left bg-gray-50 border-b">
+              <tr className="text-left bg-gray-50 border-b sticky top-0 z-10">
                 <th className="px-4 py-3 text-sm text-gray-600">Order ID</th>
                 <th className="px-4 py-3 text-sm text-gray-600">Status</th>
                 <th className="px-4 py-3 text-sm text-gray-600">Customer</th>
@@ -151,11 +151,10 @@ function TransactionList() {
 
                     <td className="px-4 py-3">
                       <select
-                        className={`border rounded px-3 py-1 text-sm font-medium focus:outline-none ${
-                          o.status === "Paid"
+                        className={`border rounded px-3 py-1 text-sm font-medium focus:outline-none ${o.status === "Paid"
                             ? "bg-green-100 text-green-800 border-green-200"
                             : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                        }`}
+                          }`}
                         value={o.status}
                         onChange={(e) =>
                           handleStatusChange(o.order_id, e.target.value)
@@ -173,7 +172,9 @@ function TransactionList() {
                     <td className="px-4 py-3 text-gray-800">{o.order_date}</td>
                     <td className="px-4 py-3">
                       <button
-                        className="btn btn-xs bg-[#F8961E] text-white hover:bg-[#d97d17] shadow-sm border-0"
+                        className="px-3 py-1 text-xs font-medium rounded-lg bg-[#F8961E] text-white 
+             hover:bg-[#e7891b] transition-all duration-200 shadow-sm 
+             hover:shadow-md active:scale-95"
                         onClick={() => viewOrderDetails(o)}
                       >
                         <Eye className="w-4 h-4" />
@@ -194,7 +195,7 @@ function TransactionList() {
 
             {/* Close */}
             <button
-              className="absolute top-3 right-4 text-xl font-bold"
+              className="absolute top-3 right-4 text-xl text-gray-600 hover:text-gray-800"
               onClick={() => setShowModal(false)}
             >
               ×
@@ -207,7 +208,14 @@ function TransactionList() {
             {/* Order Info */}
             <div className="space-y-2 text-gray-700 mb-4">
               <p><strong>Order ID:</strong> {selectedOrder.order_id}</p>
-              <p><strong>Status:</strong> {selectedOrder.status}</p>
+              <p><strong>Status:</strong><span
+                className={`px-3 py-1 text-xs font-semibold rounded-full 
+      ${selectedOrder.status === "Paid" ? "bg-green-100 text-green-700" : ""}
+      ${selectedOrder.status === "Pending" ? "bg-yellow-100 text-yellow-700" : ""}
+    `}
+              >
+                {selectedOrder.status}
+              </span></p>
               <p><strong>Customer:</strong> {selectedOrder.cus_name}</p>
               <p><strong>Contact:</strong> {selectedOrder.contact_num}</p>
               <p><strong>Total Amount:</strong> ₱{selectedOrder.total_amt}</p>
@@ -224,7 +232,7 @@ function TransactionList() {
 
             <div className="max-h-[240px] overflow-y-auto border rounded-lg">
               <table className="table table-sm w-full text-gray-700">
-                <thead className="bg-gray-100 border-b">
+                <thead className="bg-gray-100">
                   <tr>
                     <th className="px-3 py-2 text-gray-800">Product</th>
                     <th className="px-3 py-2 text-gray-800">Category</th>
@@ -236,10 +244,10 @@ function TransactionList() {
 
                 <tbody>
                   {orderItems.map((item, idx) => (
-                    <tr key={idx} className="border-b">
+                    <tr key={idx}>
                       <td className="px-3 py-2">{item.product_name}</td>
                       <td className="px-3 py-2">{item.category}</td>
-                      <td className="px-3 py-2 text-center">{item.qty}</td>
+                      <td className="px-3 py-2">{item.qty}</td>
                       <td className="px-3 py-2">₱{item.selling_price}</td>
                       <td className="px-3 py-2 font-semibold">₱{item.subtotal}</td>
                     </tr>
@@ -249,7 +257,7 @@ function TransactionList() {
               </table>
             </div>
 
-            {/* Close Button */}
+            {/* Close Button
             <div className="text-center mt-5">
               <button
                 className="btn bg-[#F8961E] text-white px-10"
@@ -257,7 +265,7 @@ function TransactionList() {
               >
                 Close
               </button>
-            </div>
+            </div> */}
 
           </div>
         </div>

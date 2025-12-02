@@ -81,7 +81,7 @@ function EwalletHistory() {
               </label>
               <ul
                 tabIndex={0}
-                className="dropdown-content menu p-2 shadow-lg bg-white rounded-lg w-44 mt-2 border border-gray-200"
+                className="dropdown-content menu p-2 shadow-lg bg-white rounded-lg w-44 mt-2 border border-gray-200 text-gray-700"
               >
                 <li>
                   <a onClick={() => handleFilterChange("All")}>All</a>
@@ -107,11 +107,10 @@ function EwalletHistory() {
               value={specificDate}
               onChange={(e) => setSpecificDate(e.target.value)}
               disabled={selectedFilter !== "Specific Date"}
-              className={`border rounded-lg py-1 px-1 text-center text-md relative z-10 transition-all ${
-                selectedFilter === "Specific Date"
-                  ? "border-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#F8961E]/50 focus:border-[#F8961E] bg-white cursor-text"
-                  : "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
-              }`}
+              className={`border rounded-lg py-1 px-1 text-center text-md relative z-10 transition-all ${selectedFilter === "Specific Date"
+                ? "border-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#F8961E]/50 focus:border-[#F8961E] bg-white cursor-text"
+                : "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
+                }`}
             />
           </div>
         </div>
@@ -121,7 +120,7 @@ function EwalletHistory() {
           <table className="table table-md w-full">
             <thead>
               <tr className="text-left bg-gray-50 border-b text-gray-700">
-                
+
                 <th>E-wallet</th>
                 <th>Type</th>
                 <th>Customer Name</th>
@@ -143,7 +142,16 @@ function EwalletHistory() {
               ) : (
                 filteredTransactions.map((t) => (
                   <tr key={t.EWALL_ID} className="text-gray-800">
-                    <td>{t.EWALL_APP}</td>
+                    <td>
+                      <span
+                        className={`px-3 py-1 text-xs font-semibold rounded-full 
+      ${t.EWALL_APP === "GCash" ? "bg-blue-100 text-blue-700" : ""}
+      ${t.EWALL_APP === "Maya" ? "bg-green-100 text-green-700" : ""}
+    `}
+                      >
+                        {t.EWALL_APP}
+                      </span>
+                    </td>
                     <td>{t.EWALL_TYPE}</td>
                     <td>{t.EWALL_ACC_NAME}</td>
                     <td>{t.EWAL_NUM}</td>

@@ -179,10 +179,10 @@ function ProductList() {
         <div className="border border-b-1 border-[#4D1C0A]"></div>
 
         {/* search filter */}
-        <div className="flex items-center justify-between mb-4 mt-4 w-full">
+        <div className="flex items-center justify-between mb-4 mt-4 w-full overflow-hidden">
 
           {/* Search Section */}
-          <div className="w-full max-w-sm">
+          <div className="w-full max-w-sm relative">
             <Search className="absolute w-5 h-5 mt-2 ml-3 text-gray-400" />
             <input
               type="text"
@@ -216,10 +216,10 @@ function ProductList() {
 
 
         {/* table */}
-        <div className="overflow-y-auto max-h-[520px] mt-4 rounded-lg bg-white shadow-inner">
-        <table className="w-full border-collapse">
+        <div className="overflow-y-auto max-h-[520px] overflow-y-auto mt-4 rounded-lg bg-white shadow-inner">
+        <table className="w-full min-w-[800px] table-auto">
           <thead>
-            <tr className="text-left bg-gray-50 text-gray-600">
+            <tr className="text-left bg-gray-50 text-gray-600 border-b sticky top-0 z-10">
               <th className="text-sm p-3">Products</th>
               <th className="text-sm p-3">Category</th>
               <th className="text-sm p-3">Cost Price</th>
