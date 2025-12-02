@@ -11,7 +11,8 @@ function Ewallet() {
 
   // Fee calculation
   const calculateFee = (amount) => {
-    if (amount >= 1 && amount <= 500) return 10;
+    if (amount >= 1 && amount <= 100) return 5;
+    if (amount >= 101 && amount <= 500) return 10;
     if (amount >= 501 && amount <= 1000) return 20;
     if (amount >= 1001 && amount <= 1500) return 30;
     if (amount >= 1501 && amount <= 2000) return 40;
@@ -38,60 +39,77 @@ function Ewallet() {
   const fee = calculateFee(ewallAmount);
   const total = parseFloat(ewallAmount) + fee;
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-
-  const payload = {
-    EWALL_APP: ewallApp,
-    EWALL_TYPE: ewallType,
-    EWALL_ACC_NAME: ewallAccName,
-    EWAL_NUM: ewalNum,
-    EWALL_AMOUNT: ewallAmount,
-    EWALL_FEE: fee,       // <-- add fee here
-    EWALL_TOTAL: total,   // <-- add total here
-    EWALL_DATE: new Date().toISOString().split('T')[0],
+  // Validate mobile number
+  const validateMobileNumber = (number) => {
+    const regex = /^09\d{9}$/; // must start with 09 and 11 digits
+    return regex.test(number);
   };
 
-  try {
-    const response = await fetch("http://127.0.0.1:8000/api/add-ewallet/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error("Error:", errorData);
-      setNotification({ show: true, message: "Failed to submit. Check console for details.", type: "error" });
+    // Mobile number validation
+    if (!validateMobileNumber(ewalNum)) {
+      setNotification({
+        show: true,
+        message: "Improper mobile number. It must start with 09 and be 11 digits.",
+        type: "error",
+      });
       setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
-      setLoading(false);
       return;
     }
 
-    const data = await response.json();
-    console.log("Success:", data);
-    setNotification({ show: true, message: "E-wallet entry submitted successfully!", type: "success" });
-    setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
+    setLoading(true);
 
-    // Reset form
-    setEwallApp("");
-    setEwallType("");
-    setEwallAccName("");
-    setEwalNum("");
-    setEwallAmount(0);
+    const payload = {
+      EWALL_APP: ewallApp,
+      EWALL_TYPE: ewallType,
+      EWALL_ACC_NAME: ewallAccName,
+      EWAL_NUM: ewalNum,
+      EWALL_AMOUNT: ewallAmount,
+      EWALL_FEE: fee,
+      EWALL_TOTAL: total,
+      EWALL_DATE: new Date().toISOString().split('T')[0],
+    };
 
-  } catch (error) {
-    console.error("Error submitting:", error);
-    setNotification({ show: true, message: "Something went wrong. Check console for details.", type: "error" });
-    setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/add-ewallet/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        console.error("Error:", errorData);
+        setNotification({ show: true, message: "Failed to submit. Check console for details.", type: "error" });
+        setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Success:", data);
+      setNotification({ show: true, message: "E-wallet entry submitted successfully!", type: "success" });
+      setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
+
+      // Reset form
+      setEwallApp("");
+      setEwallType("");
+      setEwallAccName("");
+      setEwalNum("");
+      setEwallAmount(0);
+
+    } catch (error) {
+      console.error("Error submitting:", error);
+      setNotification({ show: true, message: "Something went wrong. Check console for details.", type: "error" });
+      setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -101,6 +119,12 @@ const handleSubmit = async (e) => {
         <div className="border-b pb-2 mb-4 border-[#4D1C0A]">
           <h2 className="text-lg font-semibold text-[#4D1C0A] ">E-Wallet Details</h2>
         </div>
+
+        {notification.show && (
+          <div className={`mb-4 p-2 rounded ${notification.type === "success" ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>
+            {notification.message}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* E-Wallet App Dropdown */}
@@ -152,7 +176,11 @@ const handleSubmit = async (e) => {
             <input
               type="text"
               value={ewalNum}
-              onChange={(e) => setEwalNum(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Only allow numbers and max length 11
+                if (/^\d*$/.test(val) && val.length <= 11) setEwalNum(val);
+              }}
               className="w-full border border-gray-300 rounded-lg p-2 text-gray-800"
               placeholder="e.g., 09123456789"
               required
