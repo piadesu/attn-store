@@ -3,7 +3,8 @@ import { Bell, User, ChevronDown, Menu, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 function Topbar({ onMenuClick, pageTitle }) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -85,7 +86,24 @@ function Topbar({ onMenuClick, pageTitle }) {
   const handleNotificationClick = (productName) => {
     const encoded = encodeURIComponent(productName);
     navigate(`/analytics?product=${encoded}`);
-    setIsDropdownOpen(false);
+    setIsNotifOpen(false);
+  };
+
+  const unreadCount = notifications.length;
+  const toggleNotifDropdown = () => {
+    setIsNotifOpen((prev) => {
+      const next = !prev;
+      if (next) setIsProfileOpen(false);
+      return next;
+    });
+  };
+
+  const toggleProfileDropdown = () => {
+    setIsProfileOpen((prev) => {
+      const next = !prev;
+      if (next) setIsNotifOpen(false);
+      return next;
+    });
   };
 
   return (
@@ -115,11 +133,51 @@ function Topbar({ onMenuClick, pageTitle }) {
 
       {/* RIGHT SECTION */}
       <div className="flex items-center gap-6">
-        
+        {/* Notifications */}
+        <div className="relative">
+          <button
+            onClick={toggleNotifDropdown}
+            className="relative p-2 rounded-full border border-[#4D1C0A] text-[#4D1C0A] hover:bg-[#4D1C0A]/10 transition-colors"
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {isNotifOpen && (
+            <div className="absolute right-0 mt-3 w-80 bg-white shadow-lg rounded-lg border py-3 z-40">
+              <div className="px-4 pb-2 border-b flex items-center justify-between">
+                <span className="text-[#4D1C0A] font-semibold text-sm">Notifications</span>
+                <Bell size={16} className="text-[#4D1C0A]" />
+              </div>
+              {notifications.length > 0 ? (
+                <div className="max-h-48 overflow-y-auto px-3 py-2 space-y-2">
+                  {notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      onClick={() => handleNotificationClick(notif.productName)}
+                      className="text-sm text-gray-700 px-3 py-2 rounded-md flex items-start gap-2 bg-[#FBEED7] cursor-pointer hover:bg-[#f6e4c0]"
+                    >
+                      <AlertTriangle size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
+                      <span>{notif.message}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic px-4 py-3">No notifications</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Profile */}
         <div className="relative">
           <div
             className="flex items-center gap-2 cursor-pointer"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            onClick={toggleProfileDropdown}
           >
             <div className="p-2 border border-[#4D1C0A] rounded-full text-[#4D1C0A]">
               <User size={22} />
@@ -133,44 +191,16 @@ function Topbar({ onMenuClick, pageTitle }) {
             <ChevronDown
               size={18}
               className={`text-[#4D1C0A] transition-transform ${
-                isDropdownOpen ? "rotate-180" : ""
+                isProfileOpen ? "rotate-180" : ""
               }`}
             />
           </div>
 
-          {/* DROPDOWN MENU */}
-          {isDropdownOpen && (
+          {isProfileOpen && (
             <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border py-2">
-              <div className="px-4 py-2 border-b">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[#4D1C0A] font-semibold text-sm">
-                    Notifications
-                  </span>
-                  <Bell size={16} className="text-[#4D1C0A]" />
-                </div>
-
-                {notifications.length > 0 ? (
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        onClick={() => handleNotificationClick(notif.productName)}
-                        className="text-sm text-gray-700 px-2 py-1 rounded-md flex items-start gap-2 bg-[#FBEED7] cursor-pointer hover:bg-[#f6e4c0]"
-                      >
-                        <AlertTriangle size={14} className="text-red-500 mt-0.5" />
-                        <span>{notif.message}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400 italic">No notifications</p>
-                )}
-              </div>
-
-              {/* EDIT PROFILE BUTTON */}
               <button
                 onClick={() => {
-                  setIsDropdownOpen(false);
+                  setIsNotifOpen(false);
                   navigate("/editprofile");
                 }}
                 className="w-full text-left px-4 py-2 text-[#4D1C0A] hover:bg-[#4D1C0A]/10"

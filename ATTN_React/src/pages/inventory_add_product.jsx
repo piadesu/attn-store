@@ -180,18 +180,38 @@ function AddProduct() {
   });
 
   const [categories, setCategories] = useState([]);
+  const [activeProducts, setActiveProducts] = useState([]);
   const [image, setImage] = useState(null);
   const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  // Fetch categories on component mount
+  // Fetch categories and active products on component mount
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/categories/")
-      .then((res) => res.json())
-      .then((data) => {
-        setCategories(data);
-      })
-      .catch((err) => console.error("Error fetching categories:", err));
+    const fetchInitialData = async () => {
+      try {
+        const [categoriesRes, productsRes] = await Promise.all([
+          fetch("http://127.0.0.1:8000/api/categories/"),
+          fetch("http://127.0.0.1:8000/api/products/"),
+        ]);
+
+        if (!categoriesRes.ok) {
+          throw new Error("Failed to fetch categories");
+        }
+        if (!productsRes.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        const categoriesData = await categoriesRes.json();
+        const productsData = await productsRes.json();
+
+        setCategories(categoriesData);
+        setActiveProducts(productsData || []);
+      } catch (err) {
+        console.error("Initial data fetch error:", err);
+      }
+    };
+
+    fetchInitialData();
   }, []);
 
   //handles field changes
@@ -231,6 +251,23 @@ function AddProduct() {
     e.preventDefault();
     console.log("Product added:", product);
 
+    const normalizedName = product.name.trim().toLowerCase();
+    const duplicateExists = activeProducts.some((existingProduct) => {
+      const existingName = (existingProduct.display_name || existingProduct.name || "").trim().toLowerCase();
+      return existingName === normalizedName;
+    });
+
+    if (duplicateExists) {
+      setNotification({
+        show: true,
+        message: "A product with this name already exists. Disable or delete the existing product before adding another with the same name.",
+        type: "error",
+      });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
+      return;
+    }
+
     const formData = new FormData();
 
     //append product details to formData
@@ -266,6 +303,10 @@ function AddProduct() {
       setTimeout(() =>
         setNotification({ show: false, message: "", type: "success" }), 3000);
       console.log("Response data:", data);
+
+      if (data?.is_active) {
+        setActiveProducts((prev) => [...prev, data]);
+      }
 
       //clear fields
       setProduct({
