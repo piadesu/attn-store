@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+
 import TransactionList from "./pages/transaction-list";
 import PrivateRoute from "./utility/PrivateRoute";
 import Login from "./pages/login";
@@ -13,10 +15,15 @@ import EwalletHistory from "./pages/transaction_ewallet_history";
 import ProductList from "./pages/inventory_product_list";
 import EditProduct from "./pages/inventory_edit_product";
 import Signup from "./pages/signup";
-import "./App.css";
 import Analytics from "./pages/analytics";
+import EditProfile from "./pages/editprofile";
+
+import "./App.css";
 
 
+// ----------------------------------------------------
+// LAYOUT (Fixed infinite loop)
+// ----------------------------------------------------
 function Layout({ children, isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const [pageTitle, setPageTitle] = useState("Dashboard");
@@ -24,35 +31,50 @@ function Layout({ children, isSidebarOpen, setIsSidebarOpen }) {
   useEffect(() => {
     const titles = {
       "/dashboard": "Dashboard",
-      "/transaction-list": "Transaction",
+      "/transaction-list": "Transaction History",
+      "/transaction_order_product": "Order Product",
+      "/transaction_ewallet": "E-Wallet",
+      "/transaction_ewallet_history": "Wallet History",
+      "/inventory_add_product": "Add Product",
+      "/inventory_product_list": "Product List",
+      "/inventory_edit_product": "Edit Product",
+      "/analytics": "Analytics",
+      "/editprofile": "Edit Profile",
     };
-    setPageTitle(titles[location.pathname] || "ATTN Store");
-    document.title = titles[location.pathname] || "ATTN Store";
-  }, [location]);
+
+    const newTitle = titles[location.pathname] || "ATTN Store";
+    setPageTitle(newTitle);
+    document.title = newTitle;
+  }, [location.pathname]); // ✅ fixed
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      {/* Topbar + Content */}
+      {/* Topbar + content */}
       <main className="flex-1 transition-all duration-300 lg:ml-72">
         <div className="sticky top-0 bg-white shadow-sm z-50">
           <Topbar onMenuClick={() => setIsSidebarOpen(true)} pageTitle={pageTitle} />
         </div>
 
-        {/* Page Content */}
-        <div className="flex flex-col gap-6 p-6 sm:p-8 lg:p-10">{children}</div>
+        <div className="flex flex-col gap-6 p-6 sm:p-8 lg:p-10">
+          {children}
+        </div>
       </main>
     </div>
   );
 }
 
+
+// ----------------------------------------------------
+// APP ROUTES
+// ----------------------------------------------------
 function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // shared sidebar state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [message, setMessage] = useState("Loading...");
 
-useEffect(() => {
+  useEffect(() => {
     fetch("http://127.0.0.1:8000/ATTN_Backend/web_desc/")
       .then((res) => {
         if (!res.ok) throw new Error("Network error");
@@ -61,108 +83,126 @@ useEffect(() => {
       .then((data) => setMessage(JSON.stringify(data.recipes, null, 2)))
       .catch(() => setMessage("Failed to load recipes."));
   }, []);
-    
+
   return (
     <Router>
       <Routes>
-        {/* Public route */}
+        {/* Public */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} /> 
+        <Route path="/signup" element={<Signup />} />
 
-        {/* Protected route with Sidebar and. Topbar */}
-<Route
-  path="/dashboard"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <Dashboard />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
-<Route
-  path="/transaction_order_product"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <OrderProduct />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
-<Route
-  path="/transaction-list"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <TransactionList />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
-<Route
-  path="/transaction_ewallet"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <Ewallet />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
-<Route
-  path="/inventory_add_product"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <AddProduct />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
+        {/* Protected */}
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <Dashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
 
-<Route
-  path="/inventory_product_list"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <ProductList />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
+        <Route
+          path="/transaction_order_product"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <OrderProduct />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
 
-<Route
-  path="/inventory_edit_product/:id"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <EditProduct />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
-<Route
-  path="/transaction_ewallet_history"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <EwalletHistory />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
-<Route
-  path="/analytics"
-  element={
-    <PrivateRoute>
-      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
-        <Analytics />
-      </Layout>
-    </PrivateRoute>
-  }
-/>
+        <Route
+          path="/transaction-list"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <TransactionList />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/transaction_ewallet"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <Ewallet />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/inventory_add_product"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <AddProduct />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/inventory_product_list"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <ProductList />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/inventory_edit_product/:id"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <EditProduct />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/transaction_ewallet_history"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <EwalletHistory />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <Analytics />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* Edit Profile Route */}
+        <Route
+          path="/editprofile"
+          element={
+            <PrivateRoute>
+              <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+                <EditProfile />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </Router>
   );

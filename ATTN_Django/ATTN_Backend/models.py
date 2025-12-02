@@ -90,7 +90,7 @@ class Account(models.Model):
         return check_password(raw_password, self.PASSWORD)
 
     class Meta:
-        db_table = 'ATTN_Backend_accounts'
+        db_table = 'ATTN_Backend_accounts'  
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [

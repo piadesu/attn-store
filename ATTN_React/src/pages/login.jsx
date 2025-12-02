@@ -10,51 +10,44 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  // Redirect if already logged in
+  // If the user is already logged in, redirect automatically
   useEffect(() => {
-    const token = localStorage.getItem("access");
-    if (token) {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
       navigate("/dashboard");
     }
   }, [navigate]);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  console.log("Submitting login:", { USERNAME: username, PASSWORD: password });
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/api/login/", {
+        USERNAME: username,
+        PASSWORD: password,
+      });
 
-  try {
-    const response = await axios.post("http://127.0.0.1:8000/api/login/", {
-      USERNAME: username,
-      PASSWORD: password,
-    });
+      // 🟢 Save user data for EditProfile, Topbar, Sidebar, etc.
+      localStorage.setItem("user", JSON.stringify(response.data));
 
-    console.log("Login response:", response.data);
-
-    // Store user info in localStorage for future redirect or auth check
-    localStorage.setItem("access", JSON.stringify(response.data));
-
-    // Login successful, navigate to dashboard
-    navigate("/dashboard");
-  } catch (err) {
-    console.error("Login error:", err.response);
-    setError(err.response?.data?.detail || "Invalid username or password");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
+      // Redirect to dashboard
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Invalid username or password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
       {/* LEFT SIDE */}
-      <div className="w-full md:w-[40%]  flex flex-row md:flex-col items-center justify-center py-1 md:h-screen gap-4 bg-gradient-to-bl from-[#C53B09] via-[#F8961E] to-[#C53B09]">
+      <div className="w-full md:w-[40%] flex flex-row md:flex-col items-center justify-center py-1 md:h-screen gap-4 bg-gradient-to-bl from-[#C53B09] via-[#F8961E] to-[#C53B09]">
         <img
           src={Logo}
           alt="ATTN Logo"
@@ -76,6 +69,7 @@ const handleSubmit = async (e) => {
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {/* USERNAME */}
             <div>
               <label className="text-sm font-medium text-gray-700">
                 Username <span className="text-red-500">*</span>
@@ -90,6 +84,7 @@ const handleSubmit = async (e) => {
               />
             </div>
 
+            {/* PASSWORD */}
             <div className="relative">
               <label className="text-sm font-medium text-gray-700">
                 Password <span className="text-red-500">*</span>
@@ -112,6 +107,7 @@ const handleSubmit = async (e) => {
               </button>
             </div>
 
+            {/* LOGIN BUTTON */}
             <button
               type="submit"
               disabled={loading}
@@ -121,10 +117,12 @@ const handleSubmit = async (e) => {
             </button>
           </form>
 
+          {/* ERROR MESSAGE */}
           {error && (
             <p className="text-red-500 text-sm mt-4 text-center">{error}</p>
           )}
 
+          {/* SIGNUP LINK */}
           <p className="text-center text-sm text-gray-600 mt-6">
             Don’t have an account?{" "}
             <button

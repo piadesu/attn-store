@@ -112,67 +112,74 @@ function OrderProduct() {
   // -----------------------------
   // SUBMIT ORDER
   // -----------------------------
-  const submitOrder = (statusType) => {
-    for (let item of orderItems) {
-      if (item.qty > item.stock) {
-        showAlert(`Not enough stock for ${item.name}`, "error");
-        return;
-      }
+ const submitOrder = (statusType) => {
+
+  // 🚫 PREVENT submitting with no products
+  if (orderItems.length === 0) {
+    showAlert("Please add at least one product before submitting an order.", "error");
+    return;
+  }
+
+  for (let item of orderItems) {
+    if (item.qty > item.stock) {
+      showAlert(`Not enough stock for ${item.name}`, "error");
+      return;
     }
+  }
 
-    if (statusType === "Pending") {
-      if (!customerData.dueDate) {
-        showAlert("Due date is required for Pending orders.", "error");
-        return;
-      }
-      if (customerData.dueDate < today) {
-        showAlert("Due date cannot be in the past.", "error");
-        return;
-      }
+  if (statusType === "Pending") {
+    if (!customerData.dueDate) {
+      showAlert("Due date is required for Pending orders.", "error");
+      return;
     }
+    if (customerData.dueDate < today) {
+      showAlert("Due date cannot be in the past.", "error");
+      return;
+    }
+  }
 
-    const isPaid = statusType === "Paid";
+  const isPaid = statusType === "Paid";
 
-    const payload = {
-      status: statusType,
-      cus_name: isPaid ? "N/A" : customerData.name || null,
-      contact_num: isPaid ? "N/A" : customerData.phone || null,
-      due_date: isPaid ? today : customerData.dueDate,
-      total_amt: orderItems.reduce((sum, i) => sum + i.selling_price * i.qty, 0),
+  const payload = {
+    status: statusType,
+    cus_name: isPaid ? "N/A" : customerData.name || null,
+    contact_num: isPaid ? "N/A" : customerData.phone || null,
+    due_date: isPaid ? today : customerData.dueDate,
+    total_amt: orderItems.reduce((sum, i) => sum + i.selling_price * i.qty, 0),
 
-      items: orderItems.map((item) => ({
-        product_id: item.id,
-        product_name: item.name,
-        qty: item.qty,
-        cost_price: item.cost_price,
-        selling_price: item.selling_price,
-        subtotal: item.selling_price * item.qty,
-      })),
-    };
-
-    fetch("http://localhost:8000/api/create-order/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        showAlert(`Order marked as ${statusType}!`, "success");
-
-        const updatedProducts = products.map((prod) => {
-          const orderedItem = orderItems.find((item) => item.id === prod.id);
-          return orderedItem
-            ? { ...prod, stock: prod.stock - orderedItem.qty }
-            : prod;
-        });
-
-        setProducts(updatedProducts);
-        setOrderItems([]);
-        setCustomerData({ name: "", phone: "", dueDate: "" });
-        setShowModal(false);
-      })
-      .catch(() => showAlert("Failed to save order.", "error"));
+    items: orderItems.map((item) => ({
+      product_id: item.id,
+      product_name: item.name,
+      qty: item.qty,
+      cost_price: item.cost_price,
+      selling_price: item.selling_price,
+      subtotal: item.selling_price * item.qty,
+    })),
   };
+
+  fetch("http://localhost:8000/api/create-order/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((res) => res.json())
+    .then(() => {
+      showAlert(`Order marked as ${statusType}!`, "success");
+
+      const updatedProducts = products.map((prod) => {
+        const orderedItem = orderItems.find((item) => item.id === prod.id);
+        return orderedItem
+          ? { ...prod, stock: prod.stock - orderedItem.qty }
+          : prod;
+      });
+
+      setProducts(updatedProducts);
+      setOrderItems([]);
+      setCustomerData({ name: "", phone: "", dueDate: "" });
+      setShowModal(false);
+    })
+    .catch(() => showAlert("Failed to save order.", "error"));
+};
 
   return (
     <div className="p-6 space-y-8">

@@ -5,9 +5,18 @@ import { useNavigate } from "react-router-dom";
 function Topbar({ onMenuClick, pageTitle }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch notifications from API
+  // Load user from localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  // Fetch notifications
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -25,12 +34,11 @@ function Topbar({ onMenuClick, pageTitle }) {
     };
 
     fetchNotifications();
-
     const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Generate stock notifications
+  // Notification logic
   const generateStockNotifications = (orders, products) => {
     const productWeeks = {};
 
@@ -74,7 +82,6 @@ function Topbar({ onMenuClick, pageTitle }) {
     return stockNotifications;
   };
 
-  // When clicking a notification → go to analytics WITH product highlight
   const handleNotificationClick = (productName) => {
     const encoded = encodeURIComponent(productName);
     navigate(`/analytics?product=${encoded}`);
@@ -83,7 +90,8 @@ function Topbar({ onMenuClick, pageTitle }) {
 
   return (
     <div className="h-16 bg-white shadow-md flex items-center justify-between px-4 sm:px-6 z-30 relative">
-      {/* Left */}
+      
+      {/* LEFT */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
@@ -97,14 +105,17 @@ function Topbar({ onMenuClick, pageTitle }) {
         </h1>
       </div>
 
-      {/* Mobile Logo */}
-      <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 lg:hidden">
-        <h1 className="text-2xl font-bold text-[#F8961E]">ATTN</h1>
-        <p className="mr-7 text-gray-700 text-sm">STORE</p>
+      {/* MOBILE LOGO */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 lg:hidden">
+        <div className="flex items-center gap-1">
+          <h1 className="text-2xl font-bold text-[#F8961E]">ATTN</h1>
+          <p className="text-gray-700 text-sm">STORE</p>
+        </div>
       </div>
 
-      {/* Right */}
+      {/* RIGHT SECTION */}
       <div className="flex items-center gap-6">
+        
         <div className="relative">
           <div
             className="flex items-center gap-2 cursor-pointer"
@@ -113,9 +124,12 @@ function Topbar({ onMenuClick, pageTitle }) {
             <div className="p-2 border border-[#4D1C0A] rounded-full text-[#4D1C0A]">
               <User size={22} />
             </div>
+
+            {/* Show REAL USER NAME */}
             <span className="text-[#4D1C0A] font-medium hidden sm:block">
-              Mushorf
+              {user ? `${user.first_name} ${user.last_name}` : "Guest"}
             </span>
+
             <ChevronDown
               size={18}
               className={`text-[#4D1C0A] transition-transform ${
@@ -124,6 +138,7 @@ function Topbar({ onMenuClick, pageTitle }) {
             />
           </div>
 
+          {/* DROPDOWN MENU */}
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border py-2">
               <div className="px-4 py-2 border-b">
@@ -152,12 +167,17 @@ function Topbar({ onMenuClick, pageTitle }) {
                 )}
               </div>
 
+              {/* EDIT PROFILE BUTTON */}
               <button
-                onClick={() => alert("Edit Profile clicked!")}
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  navigate("/editprofile");
+                }}
                 className="w-full text-left px-4 py-2 text-[#4D1C0A] hover:bg-[#4D1C0A]/10"
               >
                 Edit Profile
               </button>
+
             </div>
           )}
         </div>

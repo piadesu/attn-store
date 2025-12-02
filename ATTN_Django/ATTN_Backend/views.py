@@ -10,6 +10,7 @@ from django.db.models import Sum
 
 import json
 from django.contrib.auth.hashers import make_password, check_password
+print(make_password("123"))
 from django.views.decorators.csrf import csrf_exempt
 from .models import Notification
 
@@ -101,12 +102,14 @@ def create_order(request):
 
     # Loop through ordered items
     for item in order_data["items"]:
-        product_name = item["product_name"]
+        
+        # 🔥 USE PRODUCT ID INSTEAD OF PRODUCT NAME
+        product_id = item["product_id"]
 
         try:
-            product = Product.objects.get(name__iexact=product_name)
+            product = Product.objects.get(id=product_id)
         except Product.DoesNotExist:
-            return Response({"error": f"Product '{product_name}' not found"}, status=400)
+            return Response({"error": f"Product ID {product_id} not found"}, status=400)
 
         qty_ordered = item["qty"]
 
@@ -119,21 +122,15 @@ def create_order(request):
 
         # Deduct stock
         product.stock -= qty_ordered
-
-        # 🔥 AUTO-UPDATE STOCK STATUS
-        if product.stock <= 0:
-            product.stock_status = False
-        else:
-            product.stock_status = True
-
+        product.stock_status = product.stock > 0
         product.save()
 
         # Save ordered item
         OrderedItem.objects.create(
             order=order,
-            product_name=item["product_name"],
+            product_name=item["product_name"],  # ok to store name for display
             qty=item["qty"],
-            cost_price=item["cost_price"],  # ensure cost price is saved
+            cost_price=item["cost_price"],
             selling_price=item["selling_price"],
             subtotal=item["subtotal"],
         )
@@ -321,3 +318,40 @@ def mark_notification_read(request, id):
             return JsonResponse({'status': 'success'})
         except Notification.DoesNotExist:
             return JsonResponse({'error': 'Notification not found'}, status=404)
+        
+
+
+@api_view(["GET", "PATCH"])
+def profile(request, username):
+    try:
+        account = Account.objects.get(USERNAME=username)
+    except Account.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # -----------------------------
+    # GET — return account details
+    # -----------------------------
+    if request.method == "GET":
+        serializer = AccountSerializer(account)
+        return Response(serializer.data)
+
+    # -----------------------------
+    # PATCH — update account details
+    # -----------------------------
+    if request.method == "PATCH":
+        data = request.data.copy()
+
+        # ⭐ If password is included AND not empty → hash it
+        if "PASSWORD" in data and data["PASSWORD"].strip() != "":
+            data["PASSWORD"] = make_password(data["PASSWORD"])
+        else:
+            # If empty password → do NOT overwrite existing one
+            data.pop("PASSWORD", None)
+
+        serializer = AccountSerializer(account, data=data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

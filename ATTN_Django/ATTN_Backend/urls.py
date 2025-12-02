@@ -31,6 +31,8 @@ urlpatterns = [
     path('products/', views.product_list, name='product_list'),
     path('ordereditem/', views.orderitem_list, name='ordered_item'),
     path("analytics/", views.analytics, name="analytics"),
+    path("profile/<str:username>/", views.profile),
+
 
     
     
