@@ -6,29 +6,9 @@ function TransactionList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
 
-  // Modal State
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
-
-  // ------------------------------
-  // UPDATE ORDER STATUS
-  // ------------------------------
-  const handleStatusChange = (orderId, newStatus) => {
-    fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.order_id === orderId ? { ...o, status: newStatus } : o
-          )
-        );
-      });
-  };
 
   // ------------------------------
   // FETCH ALL ORDERS
@@ -52,11 +32,11 @@ function TransactionList() {
         setOrderItems(data);
         setShowModal(true);
       })
-      .catch((err) => console.error("Error fetching items:", err));
+      .catch((err) => console.error("Error:", err));
   };
 
   // ------------------------------
-  // SEARCH + FILTER LOGIC
+  // SEARCH + FILTER
   // ------------------------------
   const filteredOrders = orders.filter((o) => {
     const matchesSearch =
@@ -86,6 +66,7 @@ function TransactionList() {
 
         {/* Search + Status Filter */}
         <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -98,42 +79,43 @@ function TransactionList() {
             />
           </div>
 
-          {/* Status Dropdown */}
-          <div className="flex items-center gap-2">
-            <div className="dropdown dropdown-end">
-              <label
-                tabIndex={0}
-                className="px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm cursor-pointer shadow-sm flex items-center gap-2"
-              >
-                {selectedStatus || "All Status"}
-                <ChevronDown className="w-4 h-4 ml-1" />
-              </label>
+          {/* Status Filter Only */}
+          <div className="dropdown dropdown-end">
+            <label
+              tabIndex={0}
+              className="px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm cursor-pointer shadow-sm flex items-center gap-2"
+            >
+              {selectedStatus || "All Status"}
+              <ChevronDown className="w-4 h-4 ml-1" />
+            </label>
 
-              <ul
-                tabIndex={0}
-                className="dropdown-content menu p-2 shadow-lg bg-white rounded-lg w-36 mt-2 border border-gray-200 text-gray-500"
-              >
-                <li><a onClick={() => setSelectedStatus("All")}>All</a></li>
-                <li><a onClick={() => setSelectedStatus("Paid")}>Paid</a></li>
-                <li><a onClick={() => setSelectedStatus("Pending")}>Pending</a></li>
-              </ul>
-            </div>
+            <ul
+              tabIndex={0}
+              className="dropdown-content menu p-2 shadow-lg bg-white rounded-lg w-36 mt-2 border border-gray-200 text-gray-500"
+            >
+              <li><a onClick={() => setSelectedStatus("All")}>All</a></li>
+              <li><a onClick={() => setSelectedStatus("Paid")}>Paid</a></li>
+              <li><a onClick={() => setSelectedStatus("Pending")}>Pending</a></li>
+            </ul>
           </div>
+
         </div>
 
-        {/* Scrollable Table */}
-        <div className="overflow-y-auto max-h-[520px] overflow-y-auto mt-4 rounded-lg bg-white shadow-inner">
+        {/* TABLE */}
+        <div className="overflow-y-auto max-h-[520px] mt-4 rounded-lg bg-white shadow-inner">
           <table className="w-full min-w-[800px] table-auto">
             <thead>
-              <tr className="text-left bg-gray-50 border-b sticky top-0 z-10">
-                <th className="px-4 py-3 text-sm text-gray-600">Order ID</th>
-                <th className="px-4 py-3 text-sm text-gray-600">Status</th>
-                <th className="px-4 py-3 text-sm text-gray-600">Customer</th>
-                <th className="px-4 py-3 text-sm text-gray-600">Contact</th>
-                <th className="px-4 py-3 text-sm text-gray-600">Total</th>
-                <th className="px-4 py-3 text-sm text-gray-600">Due Date</th>
-                <th className="px-4 py-3 text-sm text-gray-600">Order Date</th>
-                <th className="px-4 py-3 text-sm text-gray-600">Action</th>
+              <tr className="bg-gray-50 border-b sticky top-0 z-10">
+
+                <th className="px-4 py-3 text-sm text-gray-600 text-center">Order ID</th>
+                <th className="px-4 py-3 text-sm text-gray-600 text-center">Status</th>
+                <th className="px-4 py-3 text-sm text-gray-600 text-center">Customer</th>
+                <th className="px-4 py-3 text-sm text-gray-600 text-center">Contact</th>
+                <th className="px-4 py-3 text-sm text-gray-600 text-center">Total</th>
+                <th className="px-4 py-3 text-sm text-gray-600 text-center">Due Date</th>
+                <th className="px-4 py-3 text-sm text-gray-600 text-center">Order Date</th>
+                <th className="px-4 py-3 text-sm text-gray-600 text-center">Action</th>
+
               </tr>
             </thead>
 
@@ -147,39 +129,56 @@ function TransactionList() {
               ) : (
                 filteredOrders.map((o) => (
                   <tr key={o.order_id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 text-gray-800 font-medium">{o.order_id}</td>
 
-                    <td className="px-4 py-3">
-                      <select
-                        className={`border rounded px-3 py-1 text-sm font-medium focus:outline-none ${o.status === "Paid"
-                            ? "bg-green-100 text-green-800 border-green-200"
-                            : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                          }`}
-                        value={o.status}
-                        onChange={(e) =>
-                          handleStatusChange(o.order_id, e.target.value)
-                        }
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Paid">Paid</option>
-                      </select>
+                    <td className="px-4 py-3 text-gray-800 font-medium text-center">
+                      {o.order_id}
                     </td>
 
-                    <td className="px-4 py-3 text-gray-800">{o.cus_name}</td>
-                    <td className="px-4 py-3 text-gray-800">{o.contact_num}</td>
-                    <td className="px-4 py-3 text-gray-800">₱{o.total_amt}</td>
-                    <td className="px-4 py-3 text-gray-800">{o.due_date}</td>
-                    <td className="px-4 py-3 text-gray-800">{o.order_date}</td>
-                    <td className="px-4 py-3">
+                    {/* STATIC STATUS */}
+                    <td className="px-4 py-3 text-center">
+                      <span
+                        className={`px-3 py-1 text-sm font-medium rounded 
+                          ${
+                            o.status === "Paid"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                      >
+                        {o.status}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-800 text-center">
+                      {o.cus_name || "N/A"}
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-800 text-center">
+                      {o.contact_num || "N/A"}
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-800 text-center">
+                      ₱{o.total_amt}
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-800 text-center">
+                      {o.due_date || "N/A"}
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-800 text-center">
+                      {o.order_date}
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
                       <button
                         className="px-3 py-1 text-xs font-medium rounded-lg bg-[#F8961E] text-white 
-             hover:bg-[#e7891b] transition-all duration-200 shadow-sm 
-             hover:shadow-md active:scale-95"
+                        hover:bg-[#e7891b] transition-all duration-200 shadow-sm 
+                        hover:shadow-md active:scale-95"
                         onClick={() => viewOrderDetails(o)}
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                     </td>
+
                   </tr>
                 ))
               )}
@@ -208,24 +207,31 @@ function TransactionList() {
             {/* Order Info */}
             <div className="space-y-2 text-gray-700 mb-4">
               <p><strong>Order ID:</strong> {selectedOrder.order_id}</p>
-              <p><strong>Status:</strong><span
-                className={`px-3 py-1 text-xs font-semibold rounded-full 
-      ${selectedOrder.status === "Paid" ? "bg-green-100 text-green-700" : ""}
-      ${selectedOrder.status === "Pending" ? "bg-yellow-100 text-yellow-700" : ""}
-    `}
-              >
-                {selectedOrder.status}
-              </span></p>
-              <p><strong>Customer:</strong> {selectedOrder.cus_name}</p>
-              <p><strong>Contact:</strong> {selectedOrder.contact_num}</p>
+
+              <p>
+                <strong>Status:</strong>{" "}
+                <span
+                  className={`px-3 py-1 text-xs font-semibold rounded-full 
+                    ${
+                      selectedOrder.status === "Paid"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
+                >
+                  {selectedOrder.status}
+                </span>
+              </p>
+
+              <p><strong>Customer:</strong> {selectedOrder.cus_name || "N/A"}</p>
+              <p><strong>Contact:</strong> {selectedOrder.contact_num || "N/A"}</p>
               <p><strong>Total Amount:</strong> ₱{selectedOrder.total_amt}</p>
-              <p><strong>Due Date:</strong> {selectedOrder.due_date}</p>
+              <p><strong>Due Date:</strong> {selectedOrder.due_date || "N/A"}</p>
               <p><strong>Order Date:</strong> {selectedOrder.order_date}</p>
             </div>
 
             <hr className="my-3" />
 
-            {/* Ordered Items Table */}
+            {/* ORDERED ITEMS */}
             <h3 className="text-lg font-bold text-[#4D1C0A] mb-2">
               Ordered Items
             </h3>
@@ -234,11 +240,11 @@ function TransactionList() {
               <table className="table table-sm w-full text-gray-700">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-3 py-2 text-gray-800">Product</th>
-                    <th className="px-3 py-2 text-gray-800">Category</th>
-                    <th className="px-3 py-2 text-gray-800">Qty</th>
-                    <th className="px-3 py-2 text-gray-800">Price</th>
-                    <th className="px-3 py-2 text-gray-800">Subtotal</th>
+                    <th className="px-3 py-2">Product</th>
+                    <th className="px-3 py-2">Category</th>
+                    <th className="px-3 py-2">Qty</th>
+                    <th className="px-3 py-2">Price</th>
+                    <th className="px-3 py-2">Subtotal</th>
                   </tr>
                 </thead>
 
@@ -257,20 +263,9 @@ function TransactionList() {
               </table>
             </div>
 
-            {/* Close Button
-            <div className="text-center mt-5">
-              <button
-                className="btn bg-[#F8961E] text-white px-10"
-                onClick={() => setShowModal(false)}
-              >
-                Close
-              </button>
-            </div> */}
-
           </div>
         </div>
       )}
-
 
     </div>
   );
