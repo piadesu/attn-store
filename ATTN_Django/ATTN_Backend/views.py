@@ -25,6 +25,9 @@ from .serializers import (
     EwalletSerializer, AccountSerializer,
     OrderProductsSerializer, OrderedItemSerializer, OrderedItemSerializer
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 # --------------------------
 # CATEGORY VIEW
@@ -281,11 +284,21 @@ def order_items(request, order_id):
 
     for item in items:
         # Since OrderedItem has NO product FK, match by product_name
-        try:
-            product_obj = Product.objects.get(name__iexact=item.product_name)
+        # Use filter().first() to avoid MultipleObjectsReturned when names are duplicated.
+        product_qs = Product.objects.filter(name__iexact=item.product_name)
+        product_obj = product_qs.first()
+
+        if product_qs.count() > 1:
+            logger.warning(
+                "Multiple Product objects found for name=%s (order_item id=%s). Using the first match.",
+                item.product_name,
+                getattr(item, 'id', 'N/A'),
+            )
+
+        if product_obj:
             category = product_obj.category.name if product_obj.category else "N/A"
             stock_status = product_obj.stock_status
-        except Product.DoesNotExist:
+        else:
             category = "N/A"
             stock_status = False
 

@@ -9,6 +9,7 @@ function TransactionList() {
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
+  const [orderItemsLoading, setOrderItemsLoading] = useState(false);
 
   // ------------------------------
   // FETCH ALL ORDERS
@@ -23,16 +24,39 @@ function TransactionList() {
   // ------------------------------
   // OPEN MODAL & FETCH ORDER ITEMS
   // ------------------------------
-  const viewOrderDetails = (order) => {
-    setSelectedOrder(order);
+  const viewOrderDetails = async (order) => {
+    if (!order || !order.order_id) {
+      console.error("Invalid order selected", order);
+      alert("Unable to view order: invalid order data.");
+      return;
+    }
 
-    fetch(`http://127.0.0.1:8000/api/orders/${order.order_id}/items/`)
-      .then((res) => res.json())
-      .then((data) => {
-        setOrderItems(data);
-        setShowModal(true);
-      })
-      .catch((err) => console.error("Error:", err));
+    setSelectedOrder(order);
+    setOrderItems([]);
+    setOrderItemsLoading(true);
+
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/orders/${order.order_id}/items/`
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed fetching order items:", res.status, text);
+        alert("Failed to load order items. See console for details.");
+        setOrderItemsLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+      setOrderItems(data);
+      setShowModal(true);
+    } catch (err) {
+      console.error("Error fetching order items:", err);
+      alert("Network error while loading order items.");
+    } finally {
+      setOrderItemsLoading(false);
+    }
   };
 
   // ------------------------------
