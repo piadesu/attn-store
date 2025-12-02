@@ -19,10 +19,12 @@ function OrderProduct() {
   });
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
-  const [searchTerm, setSearchTerm] = useState(""); // 🔍 ADDED
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const today = new Date().toISOString().split("T")[0];
 
   // -----------------------------
-  // FETCH PRODUCTS FROM API
+  // FETCH PRODUCTS
   // -----------------------------
   useEffect(() => {
     fetch("http://localhost:8000/api/products/")
@@ -43,7 +45,7 @@ function OrderProduct() {
   }, []);
 
   // -----------------------------
-  // CHECKBOX HANDLER
+  // CHECKBOX TOGGLE
   // -----------------------------
   const handleCheckboxChange = (index) => {
     const updated = [...products];
@@ -52,19 +54,19 @@ function OrderProduct() {
   };
 
   // -----------------------------
-  // ADD SELECTED ITEMS TO ORDER
+  // ADD TO ORDER
   // -----------------------------
   const handleAddSelectedToOrder = () => {
     const selected = products.filter((p) => p.checked);
 
     if (selected.length === 0) {
-      alert("Please select at least one product.");
+      showAlert("Please select at least one product.", "error");
       return;
     }
 
     const outOfStock = selected.filter((p) => p.stock === 0);
     if (outOfStock.length > 0) {
-      alert("Some selected products are OUT OF STOCK.");
+      showAlert("Some selected products are OUT OF STOCK.", "error");
       return;
     }
 
@@ -73,19 +75,18 @@ function OrderProduct() {
       .map((p) => ({ ...p, qty: 1 }));
 
     setOrderItems([...orderItems, ...newItems]);
-
     setProducts(products.map((p) => ({ ...p, checked: false })));
   };
 
   // -----------------------------
-  // UPDATE QUANTITY
+  // UPDATE QTY
   // -----------------------------
   const updateQty = (index, type) => {
     const updated = [...orderItems];
 
     if (type === "inc") {
       if (updated[index].qty + 1 > updated[index].stock) {
-        alert("Not enough stock.");
+        showAlert("Not enough stock.", "error");
         return;
       }
       updated[index].qty += 1;
@@ -99,37 +100,45 @@ function OrderProduct() {
   };
 
   // -----------------------------
-  // FORMAT DATE
+  // SHOW ALERT (OPTION 1 DESIGN)
   // -----------------------------
-  const formatDate = (date) => {
-    if (!date) return null;
-    return new Date(date).toISOString().split("T")[0];
+  const showAlert = (message, type = "success") => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: "", type: "success" });
+    }, 3000);
   };
 
   // -----------------------------
-  // SUBMIT ORDER (WITH N/A FOR PAID)
+  // SUBMIT ORDER
   // -----------------------------
   const submitOrder = (statusType) => {
     for (let item of orderItems) {
       if (item.qty > item.stock) {
-        alert(`Not enough stock for ${item.name}`);
+        showAlert(`Not enough stock for ${item.name}`, "error");
+        return;
+      }
+    }
+
+    if (statusType === "Pending") {
+      if (!customerData.dueDate) {
+        showAlert("Due date is required for Pending orders.", "error");
+        return;
+      }
+      if (customerData.dueDate < today) {
+        showAlert("Due date cannot be in the past.", "error");
         return;
       }
     }
 
     const isPaid = statusType === "Paid";
-    const today = new Date().toISOString().split("T")[0];
 
-    const orderPayload = {
+    const payload = {
       status: statusType,
       cus_name: isPaid ? "N/A" : customerData.name || null,
       contact_num: isPaid ? "N/A" : customerData.phone || null,
-      due_date: isPaid ? today : formatDate(customerData.dueDate),
-
-      total_amt: orderItems.reduce(
-        (sum, item) => sum + item.selling_price * item.qty,
-        0
-      ),
+      due_date: isPaid ? today : customerData.dueDate,
+      total_amt: orderItems.reduce((sum, i) => sum + i.selling_price * i.qty, 0),
 
       items: orderItems.map((item) => ({
         product_id: item.id,
@@ -144,22 +153,17 @@ function OrderProduct() {
     fetch("http://localhost:8000/api/create-order/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(orderPayload),
+      body: JSON.stringify(payload),
     })
       .then((res) => res.json())
       .then(() => {
-        setNotification({ show: true, message: `Order marked as ${statusType}!`, type: "success" });
-        setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
+        showAlert(`Order marked as ${statusType}!`, "success");
 
         const updatedProducts = products.map((prod) => {
           const orderedItem = orderItems.find((item) => item.id === prod.id);
-          if (!orderedItem) return prod;
-
-          return {
-            ...prod,
-            stock: prod.stock - orderedItem.qty,
-            checked: false,
-          };
+          return orderedItem
+            ? { ...prod, stock: prod.stock - orderedItem.qty }
+            : prod;
         });
 
         setProducts(updatedProducts);
@@ -167,30 +171,45 @@ function OrderProduct() {
         setCustomerData({ name: "", phone: "", dueDate: "" });
         setShowModal(false);
       })
-      .catch(() => {
-        setNotification({ show: true, message: "Failed to save order.", type: "error" });
-        setTimeout(() => setNotification({ show: false, message: "", type: "error" }), 3000);
-      });
+      .catch(() => showAlert("Failed to save order.", "error"));
   };
 
   return (
     <div className="p-6 space-y-8">
 
-      {/* TOAST */}
+      {/* 🔥 CUSTOM TAILWIND ALERT (OPTION 1) */}
       {notification.show && (
-        <div className="toast toast-top toast-end z-50">
-          <div className={`alert ${notification.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg`}>
-            <span className="font-semibold">{notification.message}</span>
+        <div className="fixed top-5 right-5 z-50 animate-slideIn">
+          <div
+            className={`px-5 py-3 rounded-lg shadow-lg text-white flex items-center gap-3
+              ${notification.type === "success" ? "bg-green-600" : "bg-red-600"}
+            `}
+          >
+            <span className="text-lg">
+              {notification.type === "success" ? "✔️" : "⚠️"}
+            </span>
+            <span className="font-medium">{notification.message}</span>
           </div>
         </div>
       )}
+
+      <style>
+        {`
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(40px); }
+          to { opacity: 1; transform: translateX(0px); }
+        }
+        .animate-slideIn {
+          animation: slideIn 0.25s ease-out;
+        }
+        `}
+      </style>
 
       {/* PRODUCT LIST */}
       <div className="bg-white p-6 rounded-xl border border-[#D9D9D9] shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-[#4D1C0A]">Product List</h1>
 
-          {/* 🔍 SEARCH BAR */}
           <div className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md">
             <Search className="w-4 h-4 text-gray-400" />
             <input
@@ -376,6 +395,7 @@ function OrderProduct() {
                 <input
                   type="date"
                   className="w-full border rounded-lg px-4 py-2 text-gray-800"
+                  min={today}
                   value={customerData.dueDate}
                   onChange={(e) =>
                     setCustomerData({ ...customerData, dueDate: e.target.value })
