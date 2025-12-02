@@ -286,7 +286,7 @@ function OrderProduct() {
                     }
                     className="w-7 h-7 flex justify-center items-center border border-red-400 text-red-500 rounded hover:bg-red-50"
                   >
-                    ×
+                    ✕
                   </button>
                   <span>{p.name}</span>
                 </div>
@@ -334,9 +334,9 @@ function OrderProduct() {
           <div className="bg-white w-[600px] rounded-xl p-8 relative shadow-xl">
             <button
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 text-xl font-bold"
+              className="absolute top-4 right-4 text-xl font-bold text-gray-700"
             >
-              ×
+              ✕
             </button>
 
             <h2 className="text-2xl font-bold text-[#4D1C0A] mb-6">
