@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Category, OrderProducts, OrderedItem, Ewallet, Account
+from .models import Product, Category, OrderProducts, OrderedItem, Ewallet, Account, DebtPayments
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,6 +48,12 @@ class OrderedItemSerializer(serializers.ModelSerializer):
         model = OrderedItem
         fields = "__all__"  # includes product_name, qty, cost_price, selling_price
         extra_fields = ["order_date"]
+
+class DebtPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DebtPayments
+        # Use 'order' instead of 'order_id'; DRF will handle the ID automatically
+        fields = ['id', 'cus_name', 'order', 'amount_paid', 'date', 'created_at']
 
 
 

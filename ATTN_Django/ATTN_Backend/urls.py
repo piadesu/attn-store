@@ -32,6 +32,9 @@ urlpatterns = [
     path('ordereditem/', views.orderitem_list, name='ordered_item'),
     path("analytics/", views.analytics, name="analytics"),
     path("profile/<str:username>/", views.profile),
+    path('debtpayments/', views.debtpayments, name='debtpayments'),
+
+    
 
 
     

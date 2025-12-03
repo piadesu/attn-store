@@ -8,6 +8,8 @@ from rest_framework import status, generics
 from datetime import date, timedelta
 from django.db.models import Sum
 
+
+
 import json
 from django.contrib.auth.hashers import make_password, check_password
 print(make_password("123"))
@@ -17,13 +19,13 @@ from .models import Notification
 from .models import (
     Product, Category,
     OrderProducts, OrderedItem,
-    Ewallet, Account
+    Ewallet, Account, DebtPayments
 )
 
 from .serializers import (
     ProductSerializer, CategorySerializer,
     EwalletSerializer, AccountSerializer,
-    OrderProductsSerializer, OrderedItemSerializer, OrderedItemSerializer
+    OrderProductsSerializer, OrderedItemSerializer, OrderedItemSerializer, DebtPaymentSerializer
 )
 import logging
 
@@ -352,4 +354,23 @@ def profile(request, username):
             return Response({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(["GET", "POST"])
+def debtpayments(request):
+    # -----------------------------
+    # GET — return all payments
+    # -----------------------------
+    if request.method == "GET":
+        payments = DebtPayments.objects.all().order_by("-created_at")
+        serializer = DebtPaymentSerializer(payments, many=True)
+        return Response(serializer.data)
 
+    # -----------------------------
+    # POST — create a new payment
+    # -----------------------------
+    elif request.method == "POST":
+        serializer = DebtPaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

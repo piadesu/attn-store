@@ -109,12 +109,17 @@ class Notification(models.Model):
     class Meta:
         ordering = ['-created_at']
 
-
-class DebtPayment(models.Model):
+class DebtPayments(models.Model):
     cus_name = models.CharField(max_length=255)  # Customer name
+    order = models.ForeignKey(
+        'orderproducts',               # Replace 'orderproducts' with your actual Order model name
+        on_delete=models.CASCADE,      # Delete payments if the order is deleted
+        related_name='payments'        # Allows reverse relation: order.payments.all()
+    )
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)  # Amount paid
     date = models.DateField()  # Date of payment
     created_at = models.DateTimeField(auto_now_add=True)  # Record creation timestamp
 
     def __str__(self):
-        return f"{self.cus_name} - {self.amount_paid} on {self.date}"
+        return f"{self.cus_name} - {self.amount_paid} on {self.date} (Order ID: {self.order.id})"
+
