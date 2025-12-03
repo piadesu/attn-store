@@ -13,6 +13,7 @@ function EditProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // 👈 SHOW/HIDE STATE
+  const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
 
   // Get logged in user
   const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -53,11 +54,23 @@ function EditProfile() {
     })
       .then((res) => res.json())
       .then(() => {
-        alert("Profile updated successfully!");
+        // alert("Profile updated successfully!");
+        setNotification({
+          show: true,
+          message: "Profile updated successfully!",
+          type: "success"
+        });
+        setTimeout(() => {
+          setNotification({ show: false, message: "", type: "success" })
+        }, 3000);
         setSaving(false);
       })
       .catch(() => {
-        alert("Failed to update profile");
+        // alert("Failed to update profile");
+        setNotification({ show: true, message: "Failed to update profile", type: "error" });
+        setTimeout(() => {
+          setNotification({show: false, message: "", type: "success"})
+        }, 3000);
         setSaving(false);
       });
   };
@@ -65,6 +78,24 @@ function EditProfile() {
   if (loading) return <p className="p-10 text-gray-600">Loading profile...</p>;
 
   return (
+    <>
+    {notification.show && (
+        <div className="toast toast-top toast-end z-50">
+          <div
+            className={`alert ${notification.type === "success"
+                ? "alert-success"
+                : "alert-error"
+              } shadow-lg`}
+          >
+            <div>
+              <span className="font-semibold">
+                {notification.message}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    
     <div className="p-10">
       <h1 className="text-3xl font-bold text-[#4D1C0A] mb-5">Profile</h1>
 
@@ -87,16 +118,7 @@ function EditProfile() {
             />
           </div>
 
-          <div>
-            <label className="text-[#4D1C0A] font-medium">Last Name</label>
-            <input
-              name="LAST_NAME"
-              value={profile.LAST_NAME}
-              onChange={handleChange}
-              type="text"
-              className="w-full border border-gray-300 rounded-md px-4 py-2 mt-1 text-gray-800"
-            />
-          </div>
+
 
           <div>
             <label className="text-[#4D1C0A] font-medium">Middle Name</label>
@@ -110,6 +132,19 @@ function EditProfile() {
           </div>
 
           <div>
+            <label className="text-[#4D1C0A] font-medium">Last Name</label>
+            <input
+              name="LAST_NAME"
+              value={profile.LAST_NAME}
+              onChange={handleChange}
+              type="text"
+              className="w-full border border-gray-300 rounded-md px-4 py-2 mt-1 text-gray-800"
+            />
+          </div>
+        </div>
+
+        <div className=" mt-4 grid grid-cols-2 gap-6">
+          <div>
             <label className="text-[#4D1C0A] font-medium">Username</label>
             <input
               name="USERNAME"
@@ -122,7 +157,7 @@ function EditProfile() {
 
           {/* ⭐ PASSWORD WITH EYE ICON */}
           <div className="relative">
-            <label className="text-[#4D1C0A] font-medium">Password</label>
+            <label className="text-[#4D1C0A] font-medium">Create New Password</label>
 
             <input
               name="PASSWORD"
@@ -155,6 +190,7 @@ function EditProfile() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

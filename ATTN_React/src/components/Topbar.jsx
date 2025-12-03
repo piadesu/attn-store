@@ -35,7 +35,7 @@ function Topbar({ onMenuClick, pageTitle }) {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
+    const interval = setInterval(fetchNotifications, 3000);
     return () => clearInterval(interval);
   }, []);
 

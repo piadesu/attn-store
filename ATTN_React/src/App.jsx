@@ -7,6 +7,7 @@ import Topbar from "./components/Topbar";
 import TransactionList from "./pages/transaction-list";
 import PrivateRoute from "./utility/PrivateRoute";
 import Login from "./pages/login";
+import Landing from "./pages/landing";
 import Dashboard from "./pages/dashboard";
 import OrderProduct from "./pages/transaction_order_product";
 import AddProduct from "./pages/inventory_add_product";
@@ -93,7 +94,7 @@ function App() {
     <Router>
       <Routes>
         {/* Public */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 

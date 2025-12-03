@@ -181,16 +181,17 @@ export default function EditProduct() {
   }
 
   return (
-    <div className="p-3">
-      {/* Toast Notification */}
+    <>
+    {/* Toast Notification */}
       {notification.show && (
-        <div className="toast toast-top toast-end">
+        <div className="toast toast-top toast-end z-[9999]">
           <div className={`alert ${notification.type === "success" ? "alert-success" : "alert-error"}`}>
             <span>{notification.message}</span>
           </div>
         </div>
       )}
 
+    <div className="p-3">
       <h1 className="text-2xl font-bold text-[#4D1C0A] mb-4">Edit Product</h1>
 
       {error && (
@@ -396,6 +397,7 @@ export default function EditProduct() {
         </div>
       </form>
     </div>
+    </>
   )
 
 }

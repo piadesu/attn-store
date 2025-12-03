@@ -155,7 +155,7 @@ const handleSubmit = async (e) => {
     onChange={(e) => setPassword(e.target.value)}
     placeholder="Enter your password"
     required
-    className="w-full mt-1 px-4 py-1.5 pr-10 border border-[#d5b89c] rounded-lg focus:ring-2 focus:ring-[#F8961E]/30 focus:border-[#F8961E]"
+    className="w-full mt-1 px-4 py-1.5 text-gray-700 pr-10 border border-[#d5b89c] rounded-lg focus:ring-2 focus:ring-[#F8961E]/30 focus:border-[#F8961E]"
   />
  <button
   type="button"

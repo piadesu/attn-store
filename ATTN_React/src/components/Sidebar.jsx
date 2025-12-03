@@ -6,13 +6,18 @@ import { useNavigate } from "react-router-dom";
 function Navbar({ isOpen, onClose }) {
   const [active, setActive] = useState("Dashboard");
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
+
+  const openLogoutModal = () => {
+    setShowLogoutModal(true);
+  }
 
   const handleLogout = () => {
     // Optional confirmation
-    const confirmLogout = window.confirm("Are you sure you want to log out?");
-    if (!confirmLogout) return;
-
+    // const confirmLogout = window.confirm("Are you sure you want to log out?");
+    // if (!confirmLogout) return;
+  
     // Remove stored tokens
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
@@ -264,7 +269,7 @@ function Navbar({ isOpen, onClose }) {
                   
         {/* ✅ Logout Button */}
         <div className="p-6 border-t border-gray-200 bg-white">
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 border-2 border-[#F8961E] text-[#F8961E] bg-white font-semibold py-2.5 rounded-lg shadow-md transition-transform duration-150 hover:bg-[#F8961E] hover:text-white active:scale-95">
+          <button onClick={openLogoutModal} className="w-full flex items-center justify-center gap-2 border-2 border-[#F8961E] text-[#F8961E] bg-white font-semibold py-2.5 rounded-lg shadow-md transition-transform duration-150 hover:bg-[#F8961E] hover:text-white active:scale-95">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 512 512"
@@ -287,6 +292,41 @@ function Navbar({ isOpen, onClose }) {
           onClick={onClose}
         ></div>
       )}
+
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[999]">
+              <div className="bg-white p-6 rounded-xl shadow-lg w-[90%] max-w-md">
+
+                <h2 className="text-lg font-bold text-[#4D1C0A] mb-3">
+                  Confirm Log out
+                </h2>
+
+                <p className="text-gray-700 mb-5">
+                  Are you sure you want to log out?
+                </p>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowLogoutModal(false)}
+                    className="px-4 py-2 rounded-lg text-gray-700 border border-gray-300 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                    }}
+                    className="px-4 py-2 rounded-lg bg-[#EA6464]  text-white hover:bg-red-700"
+                  >
+                    Log Out
+                  </button>
+                </div>
+
+              </div>
+            </div>
+      )}
+
     </>
   );
 }
