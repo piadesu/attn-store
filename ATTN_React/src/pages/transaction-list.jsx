@@ -256,7 +256,7 @@ function TransactionList() {
 
             <div className="max-h-[240px] overflow-y-auto border rounded-lg">
               <table className="table table-sm w-full text-gray-700">
-                <thead className="bg-gray-100">
+                <thead className="bg-gray-100 text-gray-700">
                   <tr>
                     <th className="px-3 py-2">Product</th>
                     <th className="px-3 py-2">Category</th>

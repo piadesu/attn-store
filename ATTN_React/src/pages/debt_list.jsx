@@ -28,7 +28,7 @@ function DebtList() {
     pendingOrders.forEach((o) => {
       const name = o.cus_name || "Unknown";
       if (!aggregation[name]) {
-        aggregation[name] = { ...o, total_amt: parseFloat(o.total_amt || 0) };
+        aggregation[name] = { ...o, cus_name: name, total_amt: parseFloat(o.total_amt || 0) };
       } else {
         aggregation[name].total_amt += parseFloat(o.total_amt || 0);
       }
@@ -41,8 +41,9 @@ function DebtList() {
   // SEARCH + FILTER LOGIC
   // ------------------------------
   const filteredOrders = aggregatedPendingOrders().filter((o) =>
-    o.cus_name.toLowerCase().includes(searchTerm.toLowerCase())
+    (o.cus_name || "").toLowerCase().includes((searchTerm || "").toLowerCase())
   );
+
 
   // TOTAL PENDING AMOUNT
   const totalPendingAmount = aggregatedPendingOrders().reduce(
