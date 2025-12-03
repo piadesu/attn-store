@@ -178,7 +178,7 @@ export default function Landing() {
                 <span className="block text-[#F8961E]">Variety Store</span>
               </h1>
               <p className="text-xl md:text-2xl text-gray-700 mb-8 leading-relaxed">
-                Manage your store efficiently with our comprehensive platform.
+                Access your dashboard to manage products, orders, and store performance.
                 Track inventory, analyze sales, and grow your business with confidence.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -232,10 +232,10 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-[#4D1C0A] mb-4">
-              Everything You Need to Run Your Store
+              Store Operations at a Glance
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Powerful features designed to help you manage your variety store efficiently
+              Powerful features designed to help manage the variety store efficiently
             </p>
           </div>
 
@@ -266,11 +266,10 @@ export default function Landing() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-4xl md:text-5xl font-bold text-[#4D1C0A] mb-6">
-                Why Choose ATTN Store?
+                ATTN Store Management System
               </h2>
               <p className="text-xl text-gray-700 mb-8">
-                Experience the difference with our comprehensive store management platform
-                designed specifically for variety stores.
+                A streamlined system designed to make daily operations faster, clearer, and more efficient.
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
                 {benefits.map((benefit, index) => (
@@ -297,10 +296,10 @@ export default function Landing() {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#F8961E] to-[#C53B09]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Transform Your Store Management?
+            Ready to See Store Performance?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Join hundreds of store owners who trust ATTN Store to manage their business.
+            Access your dashboard to manage products, orders, and store performance.
           </p>
           <button
             onClick={() => navigate("/login")}
