@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 
-// -----------------------------
-// Title Case Helper
-// -----------------------------
 const toTitleCase = (str) =>
   str && typeof str === "string"
     ? str.replace(/\w\S*/g, (t) => t[0].toUpperCase() + t.substr(1).toLowerCase())
@@ -23,9 +20,6 @@ function OrderProduct() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // -----------------------------
-  // FETCH PRODUCTS
-  // -----------------------------
   useEffect(() => {
     fetch("http://localhost:8000/api/products/")
       .then((res) => res.json())
@@ -44,18 +38,12 @@ function OrderProduct() {
       .catch((err) => console.error("Loading products failed:", err));
   }, []);
 
-  // -----------------------------
-  // CHECKBOX TOGGLE
-  // -----------------------------
   const handleCheckboxChange = (index) => {
     const updated = [...products];
     updated[index].checked = !updated[index].checked;
     setProducts(updated);
   };
 
-  // -----------------------------
-  // ADD TO ORDER
-  // -----------------------------
   const handleAddSelectedToOrder = () => {
     const selected = products.filter((p) => p.checked);
 
@@ -78,9 +66,6 @@ function OrderProduct() {
     setProducts(products.map((p) => ({ ...p, checked: false })));
   };
 
-  // -----------------------------
-  // UPDATE QTY
-  // -----------------------------
   const updateQty = (index, type) => {
     const updated = [...orderItems];
 
@@ -99,9 +84,6 @@ function OrderProduct() {
     setOrderItems(updated);
   };
 
-  // -----------------------------
-  // SHOW ALERT (OPTION 1 DESIGN)
-  // -----------------------------
   const showAlert = (message, type = "success") => {
     setNotification({ show: true, message, type });
     setTimeout(() => {
@@ -109,82 +91,76 @@ function OrderProduct() {
     }, 3000);
   };
 
-  // -----------------------------
-  // SUBMIT ORDER
-  // -----------------------------
- const submitOrder = (statusType) => {
-
-  // 🚫 PREVENT submitting with no products
-  if (orderItems.length === 0) {
-    showAlert("Please add at least one product before submitting an order.", "error");
-    return;
-  }
-
-  for (let item of orderItems) {
-    if (item.qty > item.stock) {
-      showAlert(`Not enough stock for ${item.name}`, "error");
+  const submitOrder = (statusType) => {
+    if (orderItems.length === 0) {
+      showAlert("Please add at least one product before submitting an order.", "error");
       return;
     }
-  }
 
-  if (statusType === "Pending") {
-    if (!customerData.dueDate) {
-      showAlert("Due date is required for Pending orders.", "error");
-      return;
+    for (let item of orderItems) {
+      if (item.qty > item.stock) {
+        showAlert(`Not enough stock for ${item.name}`, "error");
+        return;
+      }
     }
-    if (customerData.dueDate < today) {
-      showAlert("Due date cannot be in the past.", "error");
-      return;
+
+    if (statusType === "Pending") {
+      if (!customerData.dueDate) {
+        showAlert("Due date is required for Pending orders.", "error");
+        return;
+      }
+      if (customerData.dueDate < today) {
+        showAlert("Due date cannot be in the past.", "error");
+        return;
+      }
     }
-  }
 
-  const isPaid = statusType === "Paid";
+    const isPaid = statusType === "Paid";
 
-  const payload = {
-    status: statusType,
-    cus_name: isPaid ? "N/A" : customerData.name || null,
-    contact_num: isPaid ? "N/A" : customerData.phone || null,
-    due_date: isPaid ? today : customerData.dueDate,
-    total_amt: orderItems.reduce((sum, i) => sum + i.selling_price * i.qty, 0),
+    const payload = {
+      status: statusType,
+      cus_name: isPaid ? "N/A" : customerData.name || null,
+      contact_num: isPaid ? "N/A" : customerData.phone || null,
+      due_date: isPaid ? today : customerData.dueDate,
+      total_amt: orderItems.reduce((sum, i) => sum + i.selling_price * i.qty, 0),
 
-    items: orderItems.map((item) => ({
-      product_id: item.id,
-      product_name: item.name,
-      qty: item.qty,
-      cost_price: item.cost_price,
-      selling_price: item.selling_price,
-      subtotal: item.selling_price * item.qty,
-    })),
-  };
+      items: orderItems.map((item) => ({
+        product_id: item.id,
+        product_name: item.name,
+        qty: item.qty,
+        cost_price: item.cost_price,
+        selling_price: item.selling_price,
+        subtotal: item.selling_price * item.qty,
+      })),
+    };
 
-  fetch("http://localhost:8000/api/create-order/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
-    .then((res) => res.json())
-    .then(() => {
-      showAlert(`Order marked as ${statusType}!`, "success");
-
-      const updatedProducts = products.map((prod) => {
-        const orderedItem = orderItems.find((item) => item.id === prod.id);
-        return orderedItem
-          ? { ...prod, stock: prod.stock - orderedItem.qty }
-          : prod;
-      });
-
-      setProducts(updatedProducts);
-      setOrderItems([]);
-      setCustomerData({ name: "", phone: "", dueDate: "" });
-      setShowModal(false);
+    fetch("http://localhost:8000/api/create-order/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     })
-    .catch(() => showAlert("Failed to save order.", "error"));
-};
+      .then((res) => res.json())
+      .then(() => {
+        showAlert(`Order marked as ${statusType}!`, "success");
+
+        const updatedProducts = products.map((prod) => {
+          const orderedItem = orderItems.find((item) => item.id === prod.id);
+          return orderedItem
+            ? { ...prod, stock: prod.stock - orderedItem.qty }
+            : prod;
+        });
+
+        setProducts(updatedProducts);
+        setOrderItems([]);
+        setCustomerData({ name: "", phone: "", dueDate: "" });
+        setShowModal(false);
+      })
+      .catch(() => showAlert("Failed to save order.", "error"));
+  };
 
   return (
     <div className="p-6 space-y-8">
-
-      {/* 🔥 CUSTOM TAILWIND ALERT (OPTION 1) */}
+      {/* ALERT */}
       {notification.show && (
         <div className="fixed top-5 right-5 z-50 animate-slideIn">
           <div
@@ -242,9 +218,10 @@ function OrderProduct() {
 
             <tbody>
               {products
-                .filter((p) =>
-                  p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  p.category.toLowerCase().includes(searchTerm.toLowerCase())
+                .filter(
+                  (p) =>
+                    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    p.category.toLowerCase().includes(searchTerm.toLowerCase())
                 )
                 .map((p, index) => (
                   <tr
@@ -373,6 +350,7 @@ function OrderProduct() {
                 </label>
                 <input
                   type="text"
+                  placeholder="Enter customer name"
                   className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.name}
                   onChange={(e) =>
@@ -387,15 +365,15 @@ function OrderProduct() {
                 </label>
                 <input
                   type="text"
-                  maxLength={11}              // 🔥 LIMIT TO 11 DIGITS
-                  inputMode="numeric"         // 🔥 MOBILE NUMPAD
-                  pattern="[0-9]*"            // 🔥 NUMBERS ONLY
+                  placeholder="09XXXXXXXXX"
+                  maxLength={11}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   className="w-full border rounded-lg px-4 py-2 text-gray-800"
                   value={customerData.phone}
                   onChange={(e) => {
                     const value = e.target.value;
 
-                    // 🔥 ALLOW ONLY NUMBERS
                     if (/^[0-9]*$/.test(value)) {
                       setCustomerData({ ...customerData, phone: value });
                     }
@@ -430,7 +408,6 @@ function OrderProduct() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

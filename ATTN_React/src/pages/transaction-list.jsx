@@ -11,9 +11,6 @@ function TransactionList() {
   const [orderItems, setOrderItems] = useState([]);
   const [orderItemsLoading, setOrderItemsLoading] = useState(false);
 
-  // ------------------------------
-  // FETCH ALL ORDERS
-  // ------------------------------
   useEffect(() => {
     fetch("http://127.0.0.1:8000/api/orders/")
       .then((res) => res.json())
@@ -21,9 +18,6 @@ function TransactionList() {
       .catch((err) => console.error("Error fetching orders:", err));
   }, []);
 
-  // ------------------------------
-  // OPEN MODAL & FETCH ORDER ITEMS
-  // ------------------------------
   const viewOrderDetails = async (order) => {
     if (!order || !order.order_id) {
       console.error("Invalid order selected", order);

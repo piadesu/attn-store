@@ -29,18 +29,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# --------------------------
-# CATEGORY VIEW
-# --------------------------
+
 
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
-# --------------------------
-# PRODUCT VIEWS
-# --------------------------
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
@@ -80,9 +75,7 @@ def product_detail(request, pk):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# --------------------------
-# ORDER VIEWS
-# --------------------------
+
 
 @api_view(['GET'])
 def order_list(request):
@@ -106,7 +99,7 @@ def create_order(request):
     # Loop through ordered items
     for item in order_data["items"]:
         
-        # 🔥 USE PRODUCT ID INSTEAD OF PRODUCT NAME
+        
         product_id = item["product_id"]
 
         try:
@@ -174,9 +167,6 @@ def analytics(request):
 
 
 
-# --------------------------
-# EWALLET VIEWS
-# --------------------------
 
 @api_view(['POST'])
 def add_ewallet(request):
@@ -196,9 +186,7 @@ def ewallet_list(request):
     return Response(serializer.data)
 
 
-# --------------------------
-# ACCOUNT AUTH
-# --------------------------
+
 
 @api_view(["POST"])
 def signup(request):
@@ -283,8 +271,7 @@ def order_items(request, order_id):
     response_data = []
 
     for item in items:
-        # Since OrderedItem has NO product FK, match by product_name
-        # Use filter().first() to avoid MultipleObjectsReturned when names are duplicated.
+       
         product_qs = Product.objects.filter(name__iexact=item.product_name)
         product_obj = product_qs.first()
 
@@ -341,24 +328,21 @@ def profile(request, username):
     except Account.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    # -----------------------------
-    # GET — return account details
-    # -----------------------------
+ 
+    
     if request.method == "GET":
         serializer = AccountSerializer(account)
         return Response(serializer.data)
 
-    # -----------------------------
-    # PATCH — update account details
-    # -----------------------------
+   
     if request.method == "PATCH":
         data = request.data.copy()
 
-        # ⭐ If password is included AND not empty → hash it
+        
         if "PASSWORD" in data and data["PASSWORD"].strip() != "":
             data["PASSWORD"] = make_password(data["PASSWORD"])
         else:
-            # If empty password → do NOT overwrite existing one
+            
             data.pop("PASSWORD", None)
 
         serializer = AccountSerializer(account, data=data, partial=True)
@@ -368,3 +352,4 @@ def profile(request, username):
             return Response({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

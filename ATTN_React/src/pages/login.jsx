@@ -32,7 +32,6 @@ export default function LoginPage() {
         PASSWORD: password,
       });
 
-      // 🟢 Save user data for EditProfile, Topbar, Sidebar, etc.
       localStorage.setItem("user", JSON.stringify(response.data));
 
       // Redirect to dashboard

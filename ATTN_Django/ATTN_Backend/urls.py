@@ -22,7 +22,7 @@ urlpatterns = [
     # ORDERS
     path('orders/', views.order_list),
 
-    # 🔥 MUST COME BEFORE update_order_status
+    # MUST COME BEFORE update_order_status
     path("orders/<int:order_id>/items/", views.order_items),
 
     path('create-order/', views.create_order),
