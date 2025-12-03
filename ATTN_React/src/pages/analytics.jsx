@@ -108,25 +108,27 @@ function analyzeMarketBasket(orderedItems, orders) {
   const totalOrders = Object.keys(orderGroups).length;
 
   // Calculate metrics for each pair
-  const associations = Object.entries(productPairs).map(([pair, count]) => {
-    const [product1, product2] = pair.split(" + ");
-    
-    const support = (count / totalOrders) * 100;
-    const confidence1 = (count / productCounts[product1]) * 100;
-    const confidence2 = (count / productCounts[product2]) * 100;
-    
-    const expectedTogether = (productCounts[product1] / totalOrders) * (productCounts[product2] / totalOrders);
-    const lift = (count / totalOrders) / expectedTogether;
+const associations = Object.entries(productPairs).map(([pair, count]) => {
+  const [product1, product2] = pair.split(" + ");
+  
+  const support = (count / totalOrders) * 100;
 
-    return {
-      product1: product1.charAt(0).toUpperCase() + product1.slice(1),
-      product2: product2.charAt(0).toUpperCase() + product2.slice(1),
-      frequency: count,
-      support: support,
-      confidence: Math.max(confidence1, confidence2),
-      lift: lift
-    };
-  });
+  // ✅ New confidence calculation: denominator = baskets with product1 OR product2
+  const denom = productCounts[product1] + productCounts[product2] - count;
+  const confidence = denom > 0 ? (count / denom) * 100 : 0;
+
+  const expectedTogether = (productCounts[product1] / totalOrders) * (productCounts[product2] / totalOrders);
+  const lift = (count / totalOrders) / expectedTogether;
+
+  return {
+    product1: product1.charAt(0).toUpperCase() + product1.slice(1),
+    product2: product2.charAt(0).toUpperCase() + product2.slice(1),
+    frequency: count,
+    support,
+    confidence,   // ✅ single confidence value for the pair
+    lift
+  };
+});
 
   // Sort by frequency and filter meaningful associations
   associations.sort((a, b) => b.frequency - a.frequency);
@@ -616,7 +618,7 @@ function Analytics() {
                 </tr>
               </thead>
 
-              <tbody>
+<tbody>
                 {basketAnalysis.map((item, index) => {
                   const isStrong = item.lift >= 2;
                   const isModerate = item.lift >= 1.5 && item.lift < 2;
