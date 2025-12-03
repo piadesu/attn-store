@@ -1,5 +1,6 @@
 import { use, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import store_logo from "../assets/images/processed_image.png";
 import {
   ShoppingCart,
   BarChart3,
@@ -280,36 +281,12 @@ export default function Landing() {
                 ))}
               </div>
             </div>
-            <div className="bg-white rounded-2xl p-8 shadow-xl border border-[#F8961E]/20">
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-[#F8961E] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <BarChart3 className="w-10 h-10 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-[#4D1C0A] mb-2">
-                    Sales Performance
-                  </h3>
-                  <p className="text-gray-600">
-                    Track your store's real-time sales performance and revenue insights.
-                  </p>
-                </div>
-
-                {/* Growth Section */}
-                <div className="pt-6 border-t border-gray-200">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Monthly Growth</span>
-                    <span className="font-bold text-[#F8961E]">
-                      {monthlyGrowth}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-[#F8961E] h-3 rounded-full transition-all"
-                      style={{ width: `${Math.min(monthlyGrowth, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
+            <div className="pt-6 border-t border-gray-200">
+              <img
+                src={store_logo}
+                alt="Store"
+                className="rounded-xl w-full h-auto object-cover"
+              />
             </div>
 
           </div>
@@ -388,5 +365,6 @@ export default function Landing() {
     </div>
   );
 }
+
 
 

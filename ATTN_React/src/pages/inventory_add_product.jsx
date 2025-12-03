@@ -8,16 +8,35 @@ import { useState, useEffect } from "react";
 
 import { use } from "react";
 
-// Modal component for adding a new category
-function AddCategoryModal({ isOpen, onClose, onCategoryAdded }) {
+// Modal component for managing categories (add / edit / delete)
+function AddCategoryModal({ 
+  isOpen, 
+  onClose, 
+  categories = [], 
+  onCategoryAdded, 
+  onCategoryUpdated, 
+  onCategoryDeleted 
+}) {
   const [categoryName, setCategoryName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editingName, setEditingName] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!categoryName.trim()) {
+    const trimmedName = categoryName.trim();
+    if (!trimmedName) {
       setError("Category name is required");
+      return;
+    }
+
+    // Frontend duplicate validation (case-insensitive)
+    const exists = categories.some(
+      (c) => (c.name || "").trim().toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (exists) {
+      setError("Category with this name already exists.");
       return;
     }
 
@@ -30,7 +49,7 @@ function AddCategoryModal({ isOpen, onClose, onCategoryAdded }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: categoryName }),
+        body: JSON.stringify({ name: trimmedName }),
       });
 
       if (!res.ok) {
@@ -55,12 +74,13 @@ function AddCategoryModal({ isOpen, onClose, onCategoryAdded }) {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-lg p-6 w-[90%] max-w-md">
-        <h2 className="text-lg font-bold text-[#4D1C0A] mb-4">Add New Category</h2>
+        <h2 className="text-lg font-bold text-[#4D1C0A] mb-4">Manage Categories</h2>
 
+        {/* Add new category */}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category Name
+              Add New Category
             </label>
             <input
               type="text"
@@ -77,13 +97,13 @@ function AddCategoryModal({ isOpen, onClose, onCategoryAdded }) {
 
           {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 mb-4">
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 border rounded-lg text-gray-500 hover:bg-gray-100"
             >
-              Cancel
+              Close
             </button>
             <button
               type="submit"
@@ -94,6 +114,124 @@ function AddCategoryModal({ isOpen, onClose, onCategoryAdded }) {
             </button>
           </div>
         </form>
+
+        {/* Existing categories list */}
+        <div className="border-t pt-4 mt-2 max-h-64 overflow-y-auto">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Existing Categories</h3>
+          {categories.length === 0 ? (
+            <p className="text-sm text-gray-400">No categories yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {categories.map((cat) => (
+                <li
+                  key={cat.id || cat.name}
+                  className="flex items-center justify-between gap-2 text-sm border border-gray-200 rounded-lg px-3 py-2"
+                >
+                  {editingId === cat.id ? (
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="flex-1 border rounded-lg px-2 py-1 text-gray-800 mr-2"
+                    />
+                  ) : (
+                    <span className="text-gray-800">{cat.name}</span>
+                  )}
+                  <div className="flex gap-2">
+                    {editingId === cat.id ? (
+                      <>
+                        <button
+                          type="button"
+                          className="px-2 py-1 text-xs bg-[#F8961E] text-white rounded"
+                          onClick={async () => {
+                            const trimmed = editingName.trim();
+                            if (!trimmed) return;
+                            // Prevent renaming to a duplicate (case-insensitive, excluding self)
+                            const exists = categories.some(
+                              (c) =>
+                                c.id !== cat.id &&
+                                (c.name || "").trim().toLowerCase() === trimmed.toLowerCase()
+                            );
+                            if (exists) {
+                              alert("Another category with this name already exists.");
+                              return;
+                            }
+                            try {
+                              const res = await fetch(`http://127.0.0.1:8000/api/categories/${cat.id}/`, {
+                                method: "PATCH",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ name: trimmed }),
+                              });
+                              if (!res.ok) {
+                                throw new Error("Failed to update category");
+                              }
+                              const updated = await res.json();
+                              onCategoryUpdated(updated);
+                              setEditingId(null);
+                              setEditingName("");
+                            } catch (err) {
+                              console.error("Error updating category:", err);
+                            }
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className="px-2 py-1 text-xs border rounded text-gray-500"
+                          onClick={() => {
+                            setEditingId(null);
+                            setEditingName("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="px-2 py-1 text-xs border rounded text-gray-600"
+                          onClick={() => {
+                            setEditingId(cat.id);
+                            setEditingName(cat.name);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="px-2 py-1 text-xs bg-red-500 text-white rounded"
+                          onClick={async () => {
+                            const confirmDelete = window.confirm(
+                              `Delete category "${cat.name}"? This will remove it from the list.`
+                            );
+                            if (!confirmDelete) return;
+                            try {
+                              const res = await fetch(`http://127.0.0.1:8000/api/categories/${cat.id}/`, {
+                                method: "DELETE",
+                              });
+                              if (!res.ok && res.status !== 204) {
+                                throw new Error("Failed to delete category");
+                              }
+                              onCategoryDeleted(cat.id);
+                            } catch (err) {
+                              console.error("Error deleting category:", err);
+                            }
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -353,7 +491,22 @@ function AddProduct() {
       <AddCategoryModal
         isOpen={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}
+        categories={categories}
         onCategoryAdded={handleCategoryAdded}
+        onCategoryUpdated={(updatedCategory) => {
+          setCategories((prev) =>
+            prev.map((cat) => (cat.id === updatedCategory.id ? updatedCategory : cat))
+          );
+        }}
+        onCategoryDeleted={(deletedId) => {
+          setCategories((prev) => prev.filter((cat) => cat.id !== deletedId));
+          // If the deleted category is currently selected on the form, clear it
+          setProduct((prev) =>
+            /* eslint-disable eqeqeq */
+            prev.category == deletedId ? { ...prev, category: "" } : prev
+            /* eslint-enable eqeqeq */
+          );
+        }}
       />
 
       {/*first section */}

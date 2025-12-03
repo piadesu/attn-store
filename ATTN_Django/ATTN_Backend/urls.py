@@ -9,7 +9,7 @@ urlpatterns = [
 
     # CATEGORY
     path('categories/', views.CategoryListCreateView.as_view()),
-    path('categories/<int:pk>/', views.CategoryListCreateView.as_view()),
+    path('categories/<int:pk>/', views.CategoryDetailView.as_view()),
 
     # EWALLET
     path('add-ewallet/', views.add_ewallet),

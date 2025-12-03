@@ -38,6 +38,11 @@ class CategoryListCreateView(generics.ListCreateAPIView):
     serializer_class = CategorySerializer
 
 
+class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
