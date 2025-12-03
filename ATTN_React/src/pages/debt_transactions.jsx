@@ -69,21 +69,7 @@ function DebtTransactions() {
   // ------------------------------
   // Update Order Status
   // ------------------------------
-  const handleStatusChange = (orderId, newStatus) => {
-    fetch(`http://127.0.0.1:8000/api/orders/${orderId}/`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.order_id === orderId ? { ...o, status: newStatus } : o
-          )
-        );
-      });
-  };
+ 
 
   // ------------------------------
   // View Order Details
@@ -104,58 +90,66 @@ function DebtTransactions() {
   // Confirm Payment
   // ------------------------------
   const handleConfirmPayment = async () => {
-    const amount = parseFloat(paymentAmount);
-    if (!amount || amount <= 0) {
-      alert("Enter a valid payment amount");
-      return;
+  const amount = parseFloat(paymentAmount);
+  if (!amount || amount <= 0) {
+    alert("Enter a valid payment amount");
+    return;
+  }
+
+  const paidAmount = customerPayments
+    .filter((p) => p.order === selectedOrder.order_id)
+    .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+
+  const remaining = selectedOrder.total_amt - paidAmount;
+
+  if (amount > remaining) {
+    alert(`Payment exceeds remaining balance. Remaining: ₱${remaining.toFixed(2)}`);
+    return;
+  }
+
+  try {
+    await fetch("http://127.0.0.1:8000/api/debtpayments/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cus_name: customerName,
+        order: selectedOrder.order_id,
+        amount_paid: amount,
+        date: new Date().toISOString().split("T")[0],
+      }),
+    });
+
+    await fetchCustomerPayments();
+    const newRemaining = remaining - amount;
+
+    if (newRemaining <= 0) {
+      await fetch(
+        `http://127.0.0.1:8000/api/orders/${selectedOrder.order_id}/`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "Paid" }),
+        }
+      );
+      alert("Payment recorded and order marked as Paid!");
+    } else {
+      alert("Payment recorded successfully!");
     }
 
-    try {
-      // 1️⃣ Record payment
-      await fetch("http://127.0.0.1:8000/api/debtpayments/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cus_name: customerName,
-          order: selectedOrder.order_id,
-          amount_paid: amount,
-          date: new Date().toISOString().split("T")[0],
-        }),
-      });
+    setPaymentAmount("");
 
-      // 2️⃣ Refresh payments
-      await fetchCustomerPayments();
+    // ✅ Close the modal after success
+    setShowModal(false);
+    setSelectedOrder(null);
 
-      // 3️⃣ Calculate new remaining amount
-      const paidAmount =
-        customerPayments
-          .filter((p) => p.order === selectedOrder.order_id)
-          .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0) + amount; // include current payment
+    fetchOrders();
+  } catch (err) {
+    console.error("Error recording payment:", err);
+    alert("Failed to record payment.");
+  }
+};
 
-      const remaining = selectedOrder.total_amt - paidAmount;
 
-      // 4️⃣ Update status if fully paid
-      if (remaining <= 0) {
-        await fetch(
-          `http://127.0.0.1:8000/api/orders/${selectedOrder.order_id}/`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: "Paid" }),
-          }
-        );
-        alert("Payment recorded and order marked as Paid!");
-      } else {
-        alert("Payment recorded successfully!");
-      }
-
-      setPaymentAmount("");
-      fetchOrders(); // refresh order list
-    } catch (err) {
-      console.error("Error recording payment:", err);
-      alert("Failed to record payment.");
-    }
-  };
 
   // ------------------------------
   // All Paid Button
@@ -243,24 +237,6 @@ function DebtTransactions() {
         </button>
       </div>
 
-      {/* Payments History */}
-      <div className="mt-4 p-4 bg-gray-50 rounded-lg shadow-inner">
-        <h3 className="font-semibold text-gray-700 mb-2">Payments Made</h3>
-        {customerPayments.filter((p) => p.cus_name === customerName).length === 0 ? (
-          <p className="text-gray-400">No payments yet.</p>
-        ) : (
-          <ul className="space-y-1">
-            {customerPayments
-              .filter((p) => p.cus_name === customerName)
-              .map((p) => (
-                <li key={p.id} className="text-gray-500">
-                  ₱{p.amount_paid} on {p.date} (Order ID: {p.order})
-                </li>
-              ))}
-          </ul>
-        )}
-      </div>
-
       {/* Orders Table */}
       <div className="rounded-xl p-6 shadow-lg bg-gradient-to-br from-white to-gray-50 mt-4">
         <div className="border-b pb-2 border-[#4D1C0A] mb-4">
@@ -306,22 +282,20 @@ function DebtTransactions() {
                 filteredOrders.map((o) => (
                   <tr key={o.order_id} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3 text-gray-800">{o.order_id}</td>
-                    <td className="px-4 py-3">
-                      <select
-                        className={`border rounded px-3 py-1 text-sm font-medium ${
-                          o.status === "Paid"
-                            ? "bg-green-100 text-green-800 border-green-200"
-                            : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                        }`}
-                        value={o.status}
-                        onChange={(e) =>
-                          handleStatusChange(o.order_id, e.target.value)
-                        }
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Paid">Paid</option>
-                      </select>
-                    </td>
+<td className="px-4 py-3 ">
+  <span
+    className={`px-3 py-1 text-sm font-medium rounded 
+      ${
+        o.status === "Paid"
+          ? "bg-green-100 text-green-800"
+          : "bg-yellow-100 text-yellow-800"
+      }`}
+  >
+    {o.status}
+  </span>
+</td>
+                       
+
                     <td className="px-4 py-3 text-gray-800">
                       ₱{o.remaining_amt.toFixed(2)}
                     </td>
@@ -341,6 +315,24 @@ function DebtTransactions() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Payments History */}
+      <div className="mt-4 p-4 bg-gray-50 rounded-lg shadow-inner">
+        <h3 className="font-semibold text-gray-700 mb-2">Payments Made</h3>
+        {customerPayments.filter((p) => p.cus_name === customerName).length === 0 ? (
+          <p className="text-gray-400">No payments yet.</p>
+        ) : (
+          <ul className="space-y-1">
+            {customerPayments
+              .filter((p) => p.cus_name === customerName)
+              .map((p) => (
+                <li key={p.id} className="text-gray-500">
+                  ₱{p.amount_paid} on {p.date} (Order ID: {p.order})
+                </li>
+              ))}
+          </ul>
+        )}
       </div>
 
       {/* Modal */}
@@ -416,10 +408,10 @@ function DebtTransactions() {
                   placeholder="Enter payment amount"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="border rounded px-3 py-1 w-32 text-gray-700"
+                  className="border rounded px-3 py-1 w-32 text-gray-700 placeholder:text-xs"
                 />
                 <button
-                  className="btn bg-green-600 text-white px-4 py-1"
+                  className="btn bg-blue-600 text-white px-4 py-1"
                   onClick={handleConfirmPayment}
                 >
                   Confirm
