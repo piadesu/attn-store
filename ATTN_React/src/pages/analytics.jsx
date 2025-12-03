@@ -198,7 +198,7 @@ function Analytics() {
     });
 
     chartData.sort((a, b) => b.thisWeek - a.thisWeek);
-    const top = chartData.slice(0, 10).map((d) => ({
+    const top = chartData.slice(0, 5).map((d) => ({
       ...d,
       thisWeek: Number(d.thisWeek) || 0,
       nextWeek: Number(d.nextWeek) || 0,
@@ -306,25 +306,20 @@ function Analytics() {
         <p className="text-sm text-gray-600 mb-4">{dataInfo}</p>
       )}
 
-      {urgentNotifications.length > 0 && (
+{urgentNotifications.length > 0 && (
         <div className="bg-white border-l-4 border-[#F8961E] p-4 mb-6 rounded-md shadow-sm">
           <div className="flex items-start text-gray-700">
             <AlertTriangle className="h-6 w-6 text-[#F8961E] mr-3 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <h3 className="text-[#4D1C0A] font-bold mb-3 text-lg">Urgent Stock Alerts</h3>
-              <div className="space-y-2">
-                {urgentNotifications.slice(0, 5).map((item) => (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                {urgentNotifications.map((item) => (
                   <div key={item.id} className="flex items-start bg-gray-50 rounded-md p-2 border border-[#F8961E]/20">
                     <Clock className="h-4 w-4 mr-2 text-[#F8961E] mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-[#4D1C0A] font-medium">{item.notificationMessage}</p>
                   </div>
                 ))}
               </div>
-              {urgentNotifications.length > 5 && (
-                <p className="text-xs text-gray-600 mt-2 italic">
-                  + {urgentNotifications.length - 5} more alert(s). Check table below.
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -372,133 +367,148 @@ function Analytics() {
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-white border border-[#F8961E]/30 rounded-lg p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-[#4D1C0A]">AI-Powered Restock Recommendations</h2>
-            <div className="text-sm text-gray-500 mt-1">
-              Based on sales patterns & predictive analytics
-            </div>
-          </div>
-          
-          {/* Search Bar */}
-          <div className="w-full sm:w-64">
-            <input
-              type="text"
-              placeholder="Search products"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 text-gray-700 border border-[#F8961E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F8961E] focus:border-transparent"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+<div className="bg-white border border-[#F8961E]/30 rounded-lg p-6 shadow-sm">
+  {/* Header + Search */}
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+    <div>
+      <h2 className="text-xl font-semibold text-[#4D1C0A]">
+        AI-Powered Restock Recommendations
+      </h2>
+      <div className="text-sm text-gray-500 mt-1">
+        Based on sales patterns & predictive analytics
+      </div>
+    </div>
+
+    <div className="w-full sm:w-64 relative">
+      <input
+        type="text"
+        placeholder="Search products"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="w-full px-4 py-2 text-gray-700 border border-[#F8961E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F8961E] focus:border-transparent"
+      />
+      {searchQuery && (
+        <button
+          onClick={() => setSearchQuery("")}
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  </div>
+
+  <div className="border-b border-[#F8961E] mb-4"></div>
+
+  {/* Scrollable Table Body */}
+  <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
+    <table className="w-full border-collapse">
+      <thead className="sticky top-0 bg-white z-10">
+        <tr className="border-b border-t border-gray-400 text-left text-gray-500">
+          <th className="p-3">Product Name</th>
+          <th className="p-3">Current Stock</th>
+          <th className="p-3">Days Until Stockout</th>
+          <th className="p-3">Suggested Restock</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {filteredRestockData.length === 0 ? (
+          <tr>
+            <td colSpan="4" className="p-3 text-center text-gray-400">
+              {searchQuery
+                ? `No products found matching "${searchQuery}"`
+                : "No products found."}
+            </td>
+          </tr>
+        ) : (
+          filteredRestockData.map((item) => {
+            const isLowStock = item.currentStock <= 10;
+            const isOutOfStock = item.currentStock === 0;
+            const isUrgent =
+              item.daysUntilStockout !== null && item.daysUntilStockout <= 3;
+
+            return (
+              <tr
+                key={item.id}
+                className={`${
+                  isOutOfStock
+                    ? "bg-red-50 text-red-700 border-l-4 border-red-500"
+                    : isUrgent
+                    ? "bg-orange-50 text-orange-700 border-l-4 border-[#F8961E]"
+                    : isLowStock
+                    ? "bg-yellow-50 text-yellow-700 border-l-4 border-yellow-500"
+                    : ""
+                }`}
               >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-        
-        <div className="border-b border-[#F8961E] mb-4"></div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-t border-gray-400 text-left text-gray-500">
-                <th className="p-3">Product Name</th>
-                <th className="p-3">Current Stock</th>
-                <th className="p-3">Days Until Stockout</th>
-                <th className="p-3">Suggested Restock</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredRestockData.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="p-3 text-center text-gray-400">
-                    {searchQuery ? `No products found matching "${searchQuery}"` : "No products found."}
-                  </td>
-                </tr>
-              ) : (
-                filteredRestockData.map((item) => {
-                  const isLowStock = item.currentStock <= 10;
-                  const isOutOfStock = item.currentStock === 0;
-                  const isUrgent = item.daysUntilStockout !== null && item.daysUntilStockout <= 3;
-                  
-                  return (
-                    <tr 
-                      key={item.id} 
-                      className={`${
-                        isOutOfStock 
-                          ? "bg-red-50 text-red-700 border-l-4 border-red-500" 
-                          : isUrgent 
-                          ? "bg-orange-50 text-orange-700 border-l-4 border-[#F8961E]"
-                          : isLowStock 
-                          ? "bg-yellow-50 text-yellow-700 border-l-4 border-yellow-500" 
-                          : ""
+                <td className="p-3 font-medium text-gray-700">
+                  {item.productName}
+                </td>
+                <td className="p-3">
+                  <span
+                    className={`font-semibold ${
+                      isOutOfStock
+                        ? "text-red-600"
+                        : isLowStock
+                        ? "text-yellow-600"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {item.currentStock}
+                  </span>
+                  {isOutOfStock && (
+                    <span className="ml-2 text-xs bg-red-200 px-2 py-1 rounded">
+                      OUT OF STOCK
+                    </span>
+                  )}
+                  {isLowStock && !isOutOfStock && (
+                    <span className="ml-2 text-xs bg-yellow-200 px-2 py-1 rounded">
+                      LOW STOCK
+                    </span>
+                  )}
+                </td>
+                <td className="p-3">
+                  {isOutOfStock ? (
+                    <span className="text-red-600 font-semibold flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      Out of Stock
+                    </span>
+                  ) : item.daysUntilStockout !== null ? (
+                    <span
+                      className={`font-semibold flex items-center ${
+                        item.daysUntilStockout <= 3
+                          ? "text-orange-600"
+                          : "text-gray-600"
                       }`}
                     >
-                      <td className="p-3 font-medium text-gray-700">{item.productName}</td>
-                      <td className="p-3">
-                        <span className={`font-semibold ${
-                          isOutOfStock 
-                            ? "text-red-600" 
-                            : isLowStock 
-                            ? "text-yellow-600" 
-                            : "text-gray-700"
-                        }`}>
-                          {item.currentStock}
-                        </span>
-                        {isOutOfStock && <span className="ml-2 text-xs bg-red-200 px-2 py-1 rounded">OUT OF STOCK</span>}
-                        {isLowStock && !isOutOfStock && <span className="ml-2 text-xs bg-yellow-200 px-2 py-1 rounded">LOW STOCK</span>}
-                      </td>
-                      <td className="p-3">
-                        {isOutOfStock ? (
-                          <span className="text-red-600 font-semibold flex items-center">
-                            <AlertTriangle className="h-4 w-4 mr-1" />
-                            Out of Stock
-                          </span>
-                        ) : item.daysUntilStockout !== null ? (
-                          <span className={`font-semibold flex items-center ${
-                            item.daysUntilStockout <= 3 ? "text-orange-600" : "text-gray-600"
-                          }`}>
-                            <Clock className="h-4 w-4 mr-1" />
-                            {item.daysUntilStockout} day{item.daysUntilStockout !== 1 ? 's' : ''}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <span className="font-semibold text-[#F8961E]">
-                          {item.suggestedRestock > 0 ? item.suggestedRestock : "—"}
-                        </span>
-                        {item.suggestedRestock > 0 && (
-                          <span className="ml-2 text-xs text-gray-500">
-                            (Predicted: {item.predictedDemand} + 20% buffer)
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                      <Clock className="h-4 w-4 mr-1" />
+                      {item.daysUntilStockout} day
+                      {item.daysUntilStockout !== 1 ? "s" : ""}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+                <td className="p-3">
+                  <span className="font-semibold text-[#F8961E]">
+                    {item.suggestedRestock > 0 ? item.suggestedRestock : "—"}
+                  </span>
+                  {item.suggestedRestock > 0 && (
+                    <span className="ml-2 text-xs text-gray-500">
+                      (Predicted: {item.predictedDemand} + 20% buffer)
+                    </span>
+                  )}
+                </td>
+              </tr>
+            );
+          })
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
 
-        <div className="mt-4 p-4 bg-[#FBEED7] rounded-lg border border-[#F8961E]/30">
-          <p className="text-sm text-[#4D1C0A]">
-            <strong>💡 How it works:</strong> The AI analyzes your sales history to predict next week's demand, 
-            adds a 20% safety buffer, and subtracts current stock to suggest optimal restock quantities.
-          </p>
-          <p className="text-sm text-[#4D1C0A] mt-2">
-            <strong>⏰ Days Until Stockout:</strong> Calculated as (Current Stock / Predicted Weekly Demand) × 7 days
-          </p>
-        </div>
-      </div>
+
     </div>
   );
 }
