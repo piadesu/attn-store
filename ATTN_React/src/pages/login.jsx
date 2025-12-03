@@ -14,12 +14,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   // If the user is already logged in, redirect automatically
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      navigate("/dashboard");
-    }
-  }, [navigate]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
