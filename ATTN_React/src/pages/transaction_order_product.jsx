@@ -38,10 +38,11 @@ function OrderProduct() {
       .catch((err) => console.error("Loading products failed:", err));
   }, []);
 
-  const handleCheckboxChange = (index) => {
-    const updated = [...products];
-    updated[index].checked = !updated[index].checked;
-    setProducts(updated);
+  // ✅ Toggle by product id (not filtered index)
+  const handleCheckboxChange = (productId) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, checked: !p.checked } : p))
+    );
   };
 
   const handleAddSelectedToOrder = () => {
@@ -63,7 +64,7 @@ function OrderProduct() {
       .map((p) => ({ ...p, qty: 1 }));
 
     setOrderItems([...orderItems, ...newItems]);
-    setProducts(products.map((p) => ({ ...p, checked: false })));
+    setProducts((prev) => prev.map((p) => ({ ...p, checked: false })));
   };
 
   const updateQty = (index, type) => {
@@ -158,6 +159,13 @@ function OrderProduct() {
       .catch(() => showAlert("Failed to save order.", "error"));
   };
 
+  // filteredProducts local variable for rendering & index-safe map
+  const filteredProducts = products.filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-6 space-y-8">
       {/* ALERT */}
@@ -217,39 +225,33 @@ function OrderProduct() {
             </thead>
 
             <tbody>
-              {products
-                .filter(
-                  (p) =>
-                    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    p.category.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-                .map((p, index) => (
-                  <tr
-                    key={p.id}
-                    className={`${p.stock === 0 ? "bg-red-50 text-gray-400" : "hover:bg-gray-50"}`}
-                  >
-                    <td className="py-2 px-3 text-left">
-                      <input
-                        type="checkbox"
-                        disabled={p.stock === 0}
-                        checked={p.checked}
-                        onChange={() => handleCheckboxChange(index)}
-                      />
-                    </td>
+              {filteredProducts.map((p) => (
+                <tr
+                  key={p.id}
+                  className={`${p.stock === 0 ? "bg-red-50 text-gray-400" : "hover:bg-gray-50"}`}
+                >
+                  <td className="py-2 px-3 text-left">
+                    <input
+                      type="checkbox"
+                      disabled={p.stock === 0}
+                      checked={p.checked}
+                      onChange={() => handleCheckboxChange(p.id)} // <-- use id
+                    />
+                  </td>
 
-                    <td className="py-2 px-3 text-left font-medium">
-                      {p.name}
-                      {p.stock === 0 && (
-                        <span className="text-red-500 font-semibold ml-2">
-                          (Out of Stock)
-                        </span>
-                      )}
-                    </td>
+                  <td className="py-2 px-3 text-left font-medium">
+                    {p.name}
+                    {p.stock === 0 && (
+                      <span className="text-red-500 font-semibold ml-2">
+                        (Out of Stock)
+                      </span>
+                    )}
+                  </td>
 
-                    <td className="py-2 px-3 text-left">{p.category}</td>
-                    <td className="py-2 px-3 text-left">₱{p.selling_price}</td>
-                  </tr>
-                ))}
+                  <td className="py-2 px-3 text-left">{p.category}</td>
+                  <td className="py-2 px-3 text-left">₱{p.selling_price}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -373,7 +375,6 @@ function OrderProduct() {
                   value={customerData.phone}
                   onChange={(e) => {
                     const value = e.target.value;
-
                     if (/^[0-9]*$/.test(value)) {
                       setCustomerData({ ...customerData, phone: value });
                     }
