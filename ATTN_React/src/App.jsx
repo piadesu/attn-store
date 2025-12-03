@@ -15,6 +15,11 @@ import EwalletHistory from "./pages/transaction_ewallet_history";
 import ProductList from "./pages/inventory_product_list";
 import EditProduct from "./pages/inventory_edit_product";
 import Signup from "./pages/signup";
+import DebtList from "./pages/debt_list";
+import DebtTransactions from "./pages/debt_transactions";
+
+
+import "./App.css";
 import Analytics from "./pages/analytics";
 import EditProfile from "./pages/editprofile";
 
@@ -158,6 +163,53 @@ function App() {
             </PrivateRoute>
           }
         />
+
+<Route
+  path="/inventory_edit_product/:id"
+  element={
+    <PrivateRoute>
+      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+        <EditProduct />
+      </Layout>
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/transaction_ewallet_history"
+  element={
+    <PrivateRoute>
+      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+        <EwalletHistory />
+      </Layout>
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/debt_list"
+  element={
+    <PrivateRoute>
+      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+        <DebtList />
+      </Layout>
+    </PrivateRoute>
+  }
+/>
+<Route
+  path="/analytics"
+  element={
+    <PrivateRoute>
+      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+        <Analytics />
+      </Layout>
+    </PrivateRoute>
+  }
+/>
+
+<Route path="/debt-transaction/:customerName" element={ <PrivateRoute>
+      <Layout isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}>
+        <DebtTransactions />
+      </Layout>
+    </PrivateRoute>} />
 
         <Route
           path="/inventory_edit_product/:id"
