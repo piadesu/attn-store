@@ -389,6 +389,18 @@ function AddProduct() {
     e.preventDefault();
     console.log("Product added:", product);
 
+    // Validate category is selected
+    if (!product.category || product.category.trim() === "") {
+      setNotification({
+        show: true,
+        message: "Please select a category before submitting.",
+        type: "error",
+      });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
+      return;
+    }
+
     const normalizedName = product.name.trim().toLowerCase();
     const duplicateExists = activeProducts.some((existingProduct) => {
       const existingName = (existingProduct.display_name || existingProduct.name || "").trim().toLowerCase();
@@ -471,18 +483,22 @@ function AddProduct() {
     <div>
       {/* notif */}
       {notification.show && (
-        <div className="toast toast-top toast-end z-50">
+        <div className="fixed top-5 right-5 z-50">
           <div
-            className={`alert ${notification.type === "success"
-                ? "alert-success"
-                : "alert-error"
-              } shadow-lg`}
+            className={`max-w-sm px-4 py-3 rounded-lg shadow-md text-white flex items-center justify-between space-x-4 ${
+              notification.type === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
+            role="status"
+            aria-live="polite"
           >
-            <div>
-              <span className="font-semibold">
-                {notification.message}
-              </span>
-            </div>
+            <div className="flex-1">{notification.message}</div>
+            <button
+              onClick={() => setNotification({ show: false, message: "", type: "success" })}
+              className="font-bold ml-4 text-white opacity-90 hover:opacity-100"
+              aria-label="Dismiss notification"
+            >
+              ×
+            </button>
           </div>
         </div>
       )}

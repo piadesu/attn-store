@@ -230,10 +230,10 @@ function DebtTransactions() {
       {/* All Paid Button */}
       <div className="mb-4">
         <button
-          className="btn bg-blue-600 text-white px-4 py-1 hover:bg-blue-700"
+          className="rounded-lg font-semibold px-4 py-3 bg-blue-600 text-white hover:bg-blue-700"
           onClick={handleAllPaid}
         >
-          Complete Pay
+          Complete Payment
         </button>
       </div>
 
@@ -340,10 +340,10 @@ function DebtTransactions() {
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
           <div className="bg-white w-[650px] rounded-xl p-6 shadow-xl relative">
             <button
-              className="absolute top-3 right-4 text-xl font-bold"
+              className="absolute top-3 right-4 text-xl font-bold text-gray-700"
               onClick={() => setShowModal(false)}
             >
-              ×
+              ✕
             </button>
 
             <h2 className="text-xl font-bold text-[#4D1C0A] mb-4">
@@ -405,13 +405,13 @@ function DebtTransactions() {
               <div className="flex items-center space-x-2">
                 <input
                   type="number"
-                  placeholder="Enter payment amount"
+                  placeholder="Enter amount"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="border rounded px-3 py-1 w-32 text-gray-700 placeholder:text-xs"
+                  className="border rounded px-3 py-1 border border-gray-400 text-gray-700"
                 />
                 <button
-                  className="btn bg-blue-600 text-white px-4 py-1"
+                  className="rounded-lg bg-green-600 text-white px-4 py-2 font-semibold"
                   onClick={handleConfirmPayment}
                 >
                   Confirm
@@ -419,14 +419,7 @@ function DebtTransactions() {
               </div>
             </div>
 
-            <div className="text-center mt-5">
-              <button
-                className="btn bg-[#F8961E] text-white px-10"
-                onClick={() => setShowModal(false)}
-              >
-                Close
-              </button>
-            </div>
+        
           </div>
         </div>
       )}
