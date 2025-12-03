@@ -38,7 +38,6 @@ function OrderProduct() {
       .catch((err) => console.error("Loading products failed:", err));
   }, []);
 
-  // ✅ Toggle by product id (not filtered index)
   const handleCheckboxChange = (productId) => {
     setProducts((prev) =>
       prev.map((p) => (p.id === productId ? { ...p, checked: !p.checked } : p))
@@ -92,6 +91,9 @@ function OrderProduct() {
     }, 3000);
   };
 
+  // ---------------------------
+  // UPDATED VALIDATION FOR PENDING
+  // ---------------------------
   const submitOrder = (statusType) => {
     if (orderItems.length === 0) {
       showAlert("Please add at least one product before submitting an order.", "error");
@@ -106,10 +108,16 @@ function OrderProduct() {
     }
 
     if (statusType === "Pending") {
+      if (!customerData.name || customerData.name.trim() === "") {
+        showAlert("Customer name is required for Pending orders.", "error");
+        return;
+      }
+
       if (!customerData.dueDate) {
         showAlert("Due date is required for Pending orders.", "error");
         return;
       }
+
       if (customerData.dueDate < today) {
         showAlert("Due date cannot be in the past.", "error");
         return;
@@ -159,7 +167,6 @@ function OrderProduct() {
       .catch(() => showAlert("Failed to save order.", "error"));
   };
 
-  // filteredProducts local variable for rendering & index-safe map
   const filteredProducts = products.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -184,19 +191,7 @@ function OrderProduct() {
         </div>
       )}
 
-      <style>
-        {`
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(40px); }
-          to { opacity: 1; transform: translateX(0px); }
-        }
-        .animate-slideIn {
-          animation: slideIn 0.25s ease-out;
-        }
-        `}
-      </style>
-
-      {/* PRODUCT LIST */}
+      {/* Product List */}
       <div className="bg-white p-6 rounded-xl border border-[#D9D9D9] shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold text-[#4D1C0A]">Product List</h1>
@@ -235,7 +230,7 @@ function OrderProduct() {
                       type="checkbox"
                       disabled={p.stock === 0}
                       checked={p.checked}
-                      onChange={() => handleCheckboxChange(p.id)} // <-- use id
+                      onChange={() => handleCheckboxChange(p.id)}
                     />
                   </td>
 
@@ -266,7 +261,7 @@ function OrderProduct() {
         </div>
       </div>
 
-      {/* ORDER DETAILS */}
+      {/* Order Details */}
       <div className="bg-white p-6 rounded-xl border border-[#D9D9D9] shadow-sm">
         <h1 className="text-xl font-bold text-[#4D1C0A] mb-4 pb-4 border-b border-[#4D1C0A]">
           Order Details
@@ -363,7 +358,7 @@ function OrderProduct() {
 
               <div>
                 <label className="block font-semibold text-gray-800">
-                  Phone Number
+                  Phone Number (optional)
                 </label>
                 <input
                   type="text"
