@@ -4,50 +4,94 @@ import { useNavigate } from "react-router-dom";
 
 function DebtList() {
   const [orders, setOrders] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const navigate = useNavigate();
 
   // ------------------------------
-  // FETCH ALL ORDERS
+  // FETCH ORDERS
   // ------------------------------
-  useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/orders/")
-      .then((res) => res.json())
-      .then((data) => setOrders(data))
-      .catch((err) => console.error("Error fetching orders:", err));
-  }, []);
-
-  // ------------------------------
-  // AGGREGATE PENDING ORDERS BY CUSTOMER
-  // ------------------------------
-  const aggregatedPendingOrders = () => {
-    const pendingOrders = orders.filter((o) => o.status === "Pending");
-    const aggregation = {};
-
-    pendingOrders.forEach((o) => {
-      const name = o.cus_name || "Unknown";
-      if (!aggregation[name]) {
-        aggregation[name] = { ...o, cus_name: name, total_amt: parseFloat(o.total_amt || 0) };
-      } else {
-        aggregation[name].total_amt += parseFloat(o.total_amt || 0);
-      }
-    });
-
-    return Object.values(aggregation);
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/orders/");
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    }
   };
 
   // ------------------------------
-  // SEARCH + FILTER LOGIC
+  // FETCH PAYMENTS
+  // ------------------------------
+  const fetchPayments = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/debtpayments/");
+      const data = await res.json();
+      setPayments(data);
+    } catch (err) {
+      console.error("Error fetching payments:", err);
+    }
+  };
+
+  // First load ONLY ONCE
+  useEffect(() => {
+    fetchOrders();
+    fetchPayments();
+  }, []);
+
+  // ------------------------------
+  // 🔥 LIVE AUTO-REFRESH (every 2 seconds)
+  // ------------------------------
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchOrders();
+      fetchPayments();
+    }, 2000);  // auto refresh every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ------------------------------
+  // AGGREGATE PENDING BY CUSTOMER
+  // ------------------------------
+  const aggregatedPendingOrders = () => {
+    const pendingOrders = orders.filter((o) => o.status === "Pending");
+    const grouped = {};
+
+    pendingOrders.forEach((order) => {
+      const name = order.cus_name || "Unknown";
+
+      const totalPaid = payments
+        .filter((p) => p.order === order.order_id)
+        .reduce((sum, p) => sum + parseFloat(p.amount_paid), 0);
+
+      const remaining = parseFloat(order.total_amt) - totalPaid;
+
+      if (!grouped[name]) {
+        grouped[name] = {
+          cus_name: name,
+          total_pending: remaining,
+        };
+      } else {
+        grouped[name].total_pending += remaining;
+      }
+    });
+
+    return Object.values(grouped);
+  };
+
+  // ------------------------------
+  // SEARCH FILTER
   // ------------------------------
   const filteredOrders = aggregatedPendingOrders().filter((o) =>
-    (o.cus_name || "").toLowerCase().includes((searchTerm || "").toLowerCase())
+    (o.cus_name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-
-  // TOTAL PENDING AMOUNT
+  // TOTAL
   const totalPendingAmount = aggregatedPendingOrders().reduce(
-    (sum, o) => sum + o.total_amt,
+    (sum, o) => sum + o.total_pending,
     0
   );
 
@@ -55,20 +99,19 @@ function DebtList() {
     <div className="p-3">
       <h1 className="text-2xl font-bold text-[#4D1C0A] mb-4">Debt List</h1>
 
-      {/* ===== TOTAL PENDING AMOUNT (NEW STYLE) ===== */}
+      {/* Total Pending Amount */}
       <div className="mt-2 mb-4 p-4 bg-white shadow-md rounded-lg border-l-4 border-[#F8961E]">
         <p className="text-lg font-semibold text-[#4D1C0A]">
           Total Pending Amount:{" "}
-          <span className="text-red-600">
-            ₱{totalPendingAmount.toLocaleString()}
-          </span>
+          <span className="text-red-600">₱{totalPendingAmount.toLocaleString()}</span>
         </p>
       </div>
 
       <div className="rounded-xl p-6 shadow-lg bg-gradient-to-br from-white to-gray-50">
-
         <div className="border-b pb-2 border-[#4D1C0A] mb-4">
-          <h2 className="font-semibold text-lg text-[#4D1C0A]">Pending Orders</h2>
+          <h2 className="font-semibold text-lg text-[#4D1C0A]">
+            Pending Orders
+          </h2>
         </div>
 
         {/* Search */}
@@ -106,12 +149,20 @@ function DebtList() {
               ) : (
                 filteredOrders.map((o, idx) => (
                   <tr key={idx} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 text-gray-800 font-medium">{o.cus_name}</td>
-                    <td className="px-4 py-3 text-gray-800">₱{o.total_amt.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-gray-800 font-medium">
+                      {o.cus_name}
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-800">
+                      ₱{o.total_pending.toLocaleString()}
+                    </td>
+
                     <td className="px-4 py-3">
                       <button
                         className="btn btn-xs bg-[#F8961E] text-white hover:bg-[#d97d17] shadow-sm border-0"
-                        onClick={() => navigate(`/debt-transaction/${o.cus_name}`)}
+                        onClick={() =>
+                          navigate(`/debt-transaction/${o.cus_name}`)
+                        }
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -123,7 +174,6 @@ function DebtList() {
           </table>
         </div>
       </div>
-
     </div>
   );
 }
