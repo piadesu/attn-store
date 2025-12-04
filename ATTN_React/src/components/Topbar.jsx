@@ -9,7 +9,7 @@ function Topbar({ onMenuClick, pageTitle }) {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Load user from localStorage
+  // Load user
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -39,7 +39,10 @@ function Topbar({ onMenuClick, pageTitle }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Notification logic
+  // ----------------------------------
+  // SIMPLE NOTIFICATION LOGIC
+  // "product is low stock — restock now"
+  // ----------------------------------
   const generateStockNotifications = (orders, products) => {
     const productWeeks = {};
 
@@ -61,26 +64,28 @@ function Topbar({ onMenuClick, pageTitle }) {
       const productName = (product.display_name || product.name).toLowerCase();
       const weeklyDemand = productWeeks[productName]?.total || 0;
       const dailyDemand = weeklyDemand / 7;
-      const daysLeft = dailyDemand > 0 ? Math.floor(product.stock / dailyDemand) : null;
 
+      // LOW STOCK RULE: stock < 5 OR daily demand > stock
+      if (product.stock <= 5) {
+        stockNotifications.push({
+          id: product.id,
+          productName: product.display_name || product.name,
+          message: `${product.display_name || product.name} is low stock — restock now`,
+        });
+      }
+
+      // Out of stock
       if (product.stock === 0) {
         stockNotifications.push({
           id: product.id,
           productName: product.display_name || product.name,
           message: `${product.display_name || product.name} is OUT OF STOCK!`,
-          read: false,
-        });
-      } else if (daysLeft !== null && daysLeft <= 5) {
-        stockNotifications.push({
-          id: product.id,
-          productName: product.display_name || product.name,
-          message: `${product.display_name || product.name} will run out in ${daysLeft} day(s)`,
-          read: false,
         });
       }
     });
 
-    return stockNotifications;
+    return stockNotifications.reverse();
+
   };
 
   const handleNotificationClick = (productName) => {
@@ -90,26 +95,11 @@ function Topbar({ onMenuClick, pageTitle }) {
   };
 
   const unreadCount = notifications.length;
-  const toggleNotifDropdown = () => {
-    setIsNotifOpen((prev) => {
-      const next = !prev;
-      if (next) setIsProfileOpen(false);
-      return next;
-    });
-  };
-
-  const toggleProfileDropdown = () => {
-    setIsProfileOpen((prev) => {
-      const next = !prev;
-      if (next) setIsNotifOpen(false);
-      return next;
-    });
-  };
 
   return (
     <div className="h-16 bg-white shadow-md flex items-center justify-between px-4 sm:px-6 z-30 relative">
       
-      {/* LEFT */}
+      {/* LEFT SIDE */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
@@ -131,12 +121,13 @@ function Topbar({ onMenuClick, pageTitle }) {
         </div>
       </div>
 
-      {/* RIGHT SECTION */}
+      {/* RIGHT SIDE */}
       <div className="flex items-center gap-6">
-        {/* Notifications */}
+
+        {/* NOTIFICATIONS */}
         <div className="relative">
           <button
-            onClick={toggleNotifDropdown}
+            onClick={() => setIsNotifOpen((prev) => !prev)}
             className="relative p-2 rounded-full border border-[#4D1C0A] text-[#4D1C0A] hover:bg-[#4D1C0A]/10 transition-colors"
           >
             <Bell size={20} />
@@ -153,6 +144,7 @@ function Topbar({ onMenuClick, pageTitle }) {
                 <span className="text-[#4D1C0A] font-semibold text-sm">Notifications</span>
                 <Bell size={16} className="text-[#4D1C0A]" />
               </div>
+
               {notifications.length > 0 ? (
                 <div className="max-h-48 overflow-y-auto px-3 py-2 space-y-2">
                   {notifications.map((notif) => (
@@ -161,29 +153,33 @@ function Topbar({ onMenuClick, pageTitle }) {
                       onClick={() => handleNotificationClick(notif.productName)}
                       className="text-sm text-gray-700 px-3 py-2 rounded-md flex items-start gap-2 bg-[#FBEED7] cursor-pointer hover:bg-[#f6e4c0]"
                     >
-                      <AlertTriangle size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
+                      <AlertTriangle
+                        size={14}
+                        className="text-red-500 mt-0.5 flex-shrink-0"
+                      />
                       <span>{notif.message}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-gray-400 italic px-4 py-3">No notifications</p>
+                <p className="text-xs text-gray-400 italic px-4 py-3">
+                  No notifications
+                </p>
               )}
             </div>
           )}
         </div>
 
-        {/* Profile */}
+        {/* PROFILE */}
         <div className="relative">
           <div
             className="flex items-center gap-2 cursor-pointer"
-            onClick={toggleProfileDropdown}
+            onClick={() => setIsProfileOpen((prev) => !prev)}
           >
             <div className="p-2 border border-[#4D1C0A] rounded-full text-[#4D1C0A]">
               <User size={22} />
             </div>
 
-            {/* Show REAL USER NAME */}
             <span className="text-[#4D1C0A] font-medium hidden sm:block">
               {user ? `${user.first_name} ${user.last_name}` : "Guest"}
             </span>
@@ -199,15 +195,11 @@ function Topbar({ onMenuClick, pageTitle }) {
           {isProfileOpen && (
             <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border py-2">
               <button
-                onClick={() => {
-                  setIsNotifOpen(false);
-                  navigate("/editprofile");
-                }}
+                onClick={() => navigate("/editprofile")}
                 className="w-full text-left px-4 py-2 text-[#4D1C0A] hover:bg-[#4D1C0A]/10"
               >
                 Edit Profile
               </button>
-
             </div>
           )}
         </div>
