@@ -7,6 +7,7 @@ function DebtTransactions() {
   const [orders, setOrders] = useState([]);
   const [customerPayments, setCustomerPayments] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -92,7 +93,15 @@ function DebtTransactions() {
   const handleConfirmPayment = async () => {
   const amount = parseFloat(paymentAmount);
   if (!amount || amount <= 0) {
-    alert("Enter a valid payment amount");
+    // alert("Enter a valid payment amount");
+    // return;
+    setNotification({
+      show: true,
+      message: "Please enter a valid payment amount.",
+      type: "error",
+    });
+    setTimeout(()=> 
+      setNotification({ show: false, message: "", type: "success"}), 3000);
     return;
   }
 
@@ -103,7 +112,15 @@ function DebtTransactions() {
   const remaining = selectedOrder.total_amt - paidAmount;
 
   if (amount > remaining) {
-    alert(`Payment exceeds remaining balance. Remaining: ₱${remaining.toFixed(2)}`);
+    // alert(`Payment exceeds remaining balance. Remaining: ₱${remaining.toFixed(2)}`);
+    // return;
+    setNotification({
+      show: true,
+      message: `Payment exceeds remaining balance. Remaining: ₱${remaining.toFixed(2)}`,
+      type: "error",
+    });
+    setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
     return;
   }
 
@@ -131,9 +148,24 @@ function DebtTransactions() {
           body: JSON.stringify({ status: "Paid" }),
         }
       );
-      alert("Payment recorded and order marked as Paid!");
+      // alert("Payment recorded and order marked as Paid!");
+      setNotification({
+        show: true,
+        message: "Payment recorded and order marked as Paid!",
+        type: "success",
+      });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
+      
     } else {
-      alert("Payment recorded successfully!");
+      // alert("Payment recorded successfully!");
+      setNotification({
+        show: true,
+        message: "Payment recorded successfully!",
+        type: "success",
+      });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
     }
 
     setPaymentAmount("");
@@ -156,7 +188,15 @@ function DebtTransactions() {
   // ------------------------------
   const handleAllPaid = async () => {
     if (!orders || orders.length === 0) {
-      alert("No pending orders to mark as paid.");
+      // alert("No pending orders to mark as paid.");
+      // return;
+      setNotification({
+        show: true,
+        message: "No pending orders to mark as paid.",
+        type: "error",
+      });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
       return;
     }
 
@@ -185,7 +225,15 @@ function DebtTransactions() {
         });
       }
 
-      alert("All pending orders marked as Paid!");
+      // alert("All pending orders marked as Paid!");
+      setNotification({
+        show: true,
+        message: "All pending orders marked as Paid!",
+        type: "success",
+      });
+      setTimeout(() =>
+        setNotification({ show: false, message: "", type: "success" }), 3000);
+
       await fetchCustomerPayments();
       await fetchOrders();
     } catch (err) {
@@ -214,6 +262,21 @@ function DebtTransactions() {
   );
 
   return (
+    <>
+    {notification.show && (
+      <div className="fixed top-5 right-5 z-[9999]">
+          <div
+            className={`max-w-sm px-4 py-3 rounded-lg shadow-md text-white flex items-center justify-between space-x-4 ${
+              notification.type === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex-1">{notification.message}</div>
+            
+          </div>
+        </div>
+    )}
     <div className="p-3">
       <h1 className="text-2xl font-bold text-[#4D1C0A] mb-4">
         {customerName}'s Debt Transactions
@@ -424,6 +487,7 @@ function DebtTransactions() {
         </div>
       )}
     </div>
+    </>
   );
 }
 

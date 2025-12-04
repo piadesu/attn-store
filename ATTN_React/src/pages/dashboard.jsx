@@ -293,7 +293,7 @@ export default function Dashboard() {
               formatter={(v) => `₱${v.toLocaleString()}`} />
               <Legend />
               <Bar dataKey="sales" fill="#F8961E" name="Sales" />
-              <Bar dataKey="profit" fill="#82ca9d" name="Profit" />
+              <Bar dataKey="profit" fill="#4D1C0A" name="Profit" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -331,7 +331,7 @@ export default function Dashboard() {
               <Tooltip formatter={(v) => `₱${v.toLocaleString()}`} />
               <Legend />
               <Bar dataKey="sales" fill="#F8961E" name="Sales" />
-              <Bar dataKey="profit" fill="#82ca9d" name="Profit" />
+              <Bar dataKey="profit" fill="#4D1C0A" name="Profit" />
             </BarChart>
           </ResponsiveContainer>
         </div>

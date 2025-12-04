@@ -177,15 +177,12 @@ function OrderProduct() {
     <div className="p-6 space-y-8">
       {/* ALERT */}
       {notification.show && (
-        <div className="fixed top-5 right-5 z-50 animate-slideIn">
+        <div className="fixed top-5 right-5 z-[9999] animate-slideIn">
           <div
             className={`px-5 py-3 rounded-lg shadow-lg text-white flex items-center gap-3
               ${notification.type === "success" ? "bg-green-600" : "bg-red-600"}
             `}
           >
-            <span className="text-lg">
-              {notification.type === "success" ? "✔️" : "⚠️"}
-            </span>
             <span className="font-medium">{notification.message}</span>
           </div>
         </div>

@@ -389,8 +389,9 @@ function AddProduct() {
     e.preventDefault();
     console.log("Product added:", product);
 
-    // Validate category is selected
-    if (!product.category || product.category.trim() === "") {
+    // Validate category is selected (coerce to string — category may be numeric when set programmatically)
+    const categoryValue = String(product.category ?? "");
+    if (!categoryValue || categoryValue.trim() === "") {
       setNotification({
         show: true,
         message: "Please select a category before submitting.",
@@ -492,13 +493,7 @@ function AddProduct() {
             aria-live="polite"
           >
             <div className="flex-1">{notification.message}</div>
-            <button
-              onClick={() => setNotification({ show: false, message: "", type: "success" })}
-              className="font-bold ml-4 text-white opacity-90 hover:opacity-100"
-              aria-label="Dismiss notification"
-            >
-              ×
-            </button>
+            
           </div>
         </div>
       )}

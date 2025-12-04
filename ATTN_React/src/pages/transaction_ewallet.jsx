@@ -121,10 +121,19 @@ function Ewallet() {
         </div>
 
         {notification.show && (
-          <div className={`mb-4 p-2 rounded ${notification.type === "success" ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>
-            {notification.message}
+        <div className="fixed top-5 right-5 z-50">
+          <div
+            className={`max-w-sm px-4 py-3 rounded-lg shadow-md text-white flex items-center justify-between space-x-4 ${
+              notification.type === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex-1">{notification.message}</div>
+            
           </div>
-        )}
+        </div>
+      )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* E-Wallet App Dropdown */}
