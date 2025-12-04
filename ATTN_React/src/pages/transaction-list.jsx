@@ -11,6 +11,9 @@ function TransactionList() {
   const [orderItems, setOrderItems] = useState([]);
   const [orderItemsLoading, setOrderItemsLoading] = useState(false);
 
+  // ------------------------------
+  // INITIAL ORDER FETCH
+  // ------------------------------
   useEffect(() => {
     fetch("http://127.0.0.1:8000/api/orders/")
       .then((res) => res.json())
@@ -18,6 +21,23 @@ function TransactionList() {
       .catch((err) => console.error("Error fetching orders:", err));
   }, []);
 
+  // ------------------------------
+  // 🔥 LIVE AUTO-REFRESH EVERY 2 SECONDS
+  // ------------------------------
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch("http://127.0.0.1:8000/api/orders/")
+        .then((res) => res.json())
+        .then((data) => setOrders(data))
+        .catch((err) => console.error("Live update failed:", err));
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ------------------------------
+  // OPEN MODAL + FETCH ITEMS
+  // ------------------------------
   const viewOrderDetails = async (order) => {
     if (!order || !order.order_id) {
       console.error("Invalid order selected", order);
@@ -78,14 +98,15 @@ function TransactionList() {
 
       <div className="rounded-xl p-6 shadow-lg bg-gradient-to-br from-white to-gray-50">
 
+        {/* HEADER */}
         <div className="border-b pb-2 border-[#4D1C0A] mb-4">
           <h2 className="font-semibold text-lg text-[#4D1C0A]">Orders</h2>
         </div>
 
-        {/* Search + Status Filter */}
+        {/* Search + Filter */}
         <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
 
-          {/* Search */}
+          {/* SEARCH BAR */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -97,7 +118,7 @@ function TransactionList() {
             />
           </div>
 
-          {/* Status Filter Only */}
+          {/* STATUS FILTER */}
           <div className="dropdown dropdown-end">
             <label
               tabIndex={0}
@@ -124,7 +145,6 @@ function TransactionList() {
           <table className="w-full min-w-[800px] table-auto">
             <thead>
               <tr className="bg-gray-50 border-b sticky top-0 z-10">
-
                 <th className="px-4 py-3 text-sm text-gray-600 text-center">Order ID</th>
                 <th className="px-4 py-3 text-sm text-gray-600 text-center">Status</th>
                 <th className="px-4 py-3 text-sm text-gray-600 text-center">Customer</th>
@@ -133,7 +153,6 @@ function TransactionList() {
                 <th className="px-4 py-3 text-sm text-gray-600 text-center">Due Date</th>
                 <th className="px-4 py-3 text-sm text-gray-600 text-center">Order Date</th>
                 <th className="px-4 py-3 text-sm text-gray-600 text-center">Action</th>
-
               </tr>
             </thead>
 
@@ -152,7 +171,6 @@ function TransactionList() {
                       {o.order_id}
                     </td>
 
-                    {/* STATIC STATUS */}
                     <td className="px-4 py-3 text-center">
                       <span
                         className={`px-3 py-1 text-sm font-medium rounded 
@@ -189,8 +207,7 @@ function TransactionList() {
                     <td className="px-4 py-3 text-center">
                       <button
                         className="px-3 py-1 text-xs font-medium rounded-lg bg-[#F8961E] text-white 
-                        hover:bg-[#e7891b] transition-all duration-200 shadow-sm 
-                        hover:shadow-md active:scale-95"
+                        hover:bg-[#e7891b] transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                         onClick={() => viewOrderDetails(o)}
                       >
                         <Eye className="w-4 h-4" />
@@ -205,12 +222,11 @@ function TransactionList() {
         </div>
       </div>
 
-      {/* ================= Modal ================= */}
+      {/* MODAL */}
       {showModal && selectedOrder && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
           <div className="bg-white w-[650px] rounded-xl p-6 shadow-xl relative">
 
-            {/* Close */}
             <button
               className="absolute top-3 right-4 text-xl text-gray-600 hover:text-gray-800"
               onClick={() => setShowModal(false)}
@@ -222,20 +238,15 @@ function TransactionList() {
               Order Details
             </h2>
 
-            {/* Order Info */}
             <div className="space-y-2 text-gray-700 mb-4">
               <p><strong>Order ID:</strong> {selectedOrder.order_id}</p>
-
-              <p>
-                <strong>Status:</strong>{" "}
-                <span
-                  className={`px-3 py-1 text-xs font-semibold rounded-full 
-                    ${
-                      selectedOrder.status === "Paid"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                >
+              <p><strong>Status:</strong> 
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full 
+                  ${
+                    selectedOrder.status === "Paid"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}>
                   {selectedOrder.status}
                 </span>
               </p>
@@ -249,7 +260,6 @@ function TransactionList() {
 
             <hr className="my-3" />
 
-            {/* ORDERED ITEMS */}
             <h3 className="text-lg font-bold text-[#4D1C0A] mb-2">
               Ordered Items
             </h3>
